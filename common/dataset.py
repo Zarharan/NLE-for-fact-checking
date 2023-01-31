@@ -73,24 +73,24 @@ class PubHealthDataset():
     return temp_set
 
 
-  def get_k_rand_per_class(self, k= 2, target_set= 'train', random_seed= 313):
-    ''' This function selects k instances per label randomly and cleans them by using pre_processor object.
+  def get_k_rand_instances(self, k_per_class= 2, k_rand_instance=1, target_set= 'train', random_seed= 313):
+    ''' This function selects k1 instances per label and k2 instances regardless of class randomly and cleans them by using pre_processor object.
     
-    :param k: The number of samples per class.
-    :type text: int
+    :param k_per_class: The number of random samples per class.
+    :type k_per_class: int
+    :param k_rand_instance: The number of random samples regardless of class.
+    :type k_rand_instance: int    
     :param target_set: The target set to select from. Acceptable values are train, val, and test.
-    :type text: str
+    :type target_set: str
     :param random_seed: seed for random function. Pass None for select different instances randomly.
     :type random_seed: int
+    
     :returns: List of Cleaned examples
     :rtype: list
     '''
 
     np.random.seed(random_seed)
     assert target_set in ['train', 'val', 'test'], f"Acceptable values for target_set are {all_available_sets}."
-
-    self.k_rand_clean_examples= []
-    fn = lambda obj: obj.loc[np.random.choice(obj.index, k, False),:]
 
     if target_set== "train":
       assert self.df_orginal_trainset is not None, "Please read the train set at first!"
@@ -102,10 +102,25 @@ class PubHealthDataset():
       assert self.df_orginal_testset is not None, "Please read the test set at first!"
       temp_df= self.df_orginal_testset.loc[self.df_orginal_testset['label'].isin(self.label_space)]
 
-    temp_df= temp_df.groupby('label', as_index=False).apply(fn)
-    temp_df= temp_df.sample(frac=1)
+    rand_instances_df= None
+    self.k_rand_clean_examples= []
 
-    for index, row in temp_df.iterrows():
+    # select k random instances per class
+    if k_per_class> 0:
+      fn = lambda obj: obj.loc[np.random.choice(obj.index, k_per_class, False),:]
+
+      rand_instances_df= temp_df.groupby('label', as_index=False).apply(fn)
+      rand_instances_df= rand_instances_df.sample(frac=1)
+
+    # select k random instances regardless of class
+    if k_rand_instance>0:
+      if k_per_class> 0:
+        rand_instances_df= pd.concat([temp_df[~temp_df["claim_id"].isin(rand_instances_df['claim_id'])].sample(k_rand_instance)
+          ,rand_instances_df])
+      else:
+        rand_instances_df= temp_df.sample(k_rand_instance)
+
+    for index, row in rand_instances_df.iterrows():
       self.k_rand_clean_examples.append({"claim":self.pre_processor.clean_text(row['claim'])
           ,"main_text":self.pre_processor.clean_text(row['main_text']),"label":row['label']
           , "explanation":self.pre_processor.clean_text(row['explanation'])})
