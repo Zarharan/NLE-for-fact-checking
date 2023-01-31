@@ -2,6 +2,7 @@ import numpy as np
 from pathlib import Path
 import pandas as pd
 from common.preprocessor import Preprocessor
+# import random
 
 
 class PubHealthDataset():
@@ -72,18 +73,20 @@ class PubHealthDataset():
     return temp_set
 
 
-  def get_k_rand_per_class(self, k= 2, target_set= 'train'):
+  def get_k_rand_per_class(self, k= 2, target_set= 'train', random_seed= 313):
     ''' This function selects k instances per label randomly and cleans them by using pre_processor object.
     
     :param k: The number of samples per class.
     :type text: int
     :param target_set: The target set to select from. Acceptable values are train, val, and test.
     :type text: str
-
+    :param random_seed: seed for random function. Pass None for select different instances randomly.
+    :type random_seed: int
     :returns: List of Cleaned examples
     :rtype: list
     '''
 
+    np.random.seed(random_seed)
     assert target_set in ['train', 'val', 'test'], f"Acceptable values for target_set are {all_available_sets}."
 
     self.k_rand_clean_examples= []
