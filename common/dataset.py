@@ -73,7 +73,8 @@ class PubHealthDataset():
     return temp_set
 
 
-  def get_k_rand_instances(self, k_per_class= 2, k_rand_instance=1, target_set= 'train', random_seed= 313):
+  def get_k_rand_instances(self, k_per_class= 2, k_rand_instance=1, target_set= 'train'
+    , random_seed= 313, summarization_method= None):
     ''' This function selects k1 instances per label and k2 instances regardless of class randomly and cleans them by using pre_processor object.
     
     :param k_per_class: The number of random samples per class.
@@ -84,7 +85,9 @@ class PubHealthDataset():
     :type target_set: str
     :param random_seed: seed for random function. Pass None for select different instances randomly.
     :type random_seed: int
-    
+    :param summarization_method: The method to summarize the main text of the news
+    :type summarization_method: function
+
     :returns: List of Cleaned examples
     :rtype: list
     '''
@@ -121,8 +124,13 @@ class PubHealthDataset():
         rand_instances_df= temp_df.sample(k_rand_instance)
 
     for index, row in rand_instances_df.iterrows():
-      self.k_rand_clean_examples.append({"claim":self.pre_processor.clean_text(row['claim'])
+      sample= {"claim":self.pre_processor.clean_text(row['claim'])
           ,"main_text":self.pre_processor.clean_text(row['main_text']),"label":row['label']
-          , "explanation":self.pre_processor.clean_text(row['explanation'])})
+          , "explanation":self.pre_processor.clean_text(row['explanation'])}
+      
+      if summarization_method:
+        sample["summarized_main_text"]= summarization_method(sample["main_text"])
+      
+      self.k_rand_clean_examples.append(sample)
 
     return self.k_rand_clean_examples
