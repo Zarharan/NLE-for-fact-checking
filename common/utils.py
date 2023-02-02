@@ -2,6 +2,22 @@ import requests
 import openai
 
 
+PROMPT_TEMPLATES = {
+    "PubHealth": {
+        "veracity" : {
+            "basic": ("Context: {}\nClaim: {}\nclaim is {}\n")
+        },
+        "explanation": {
+            "basic": ("Context: {}\nClaim: {}\nclaim is {}\nWhy? {}\n")
+            }
+    }
+}
+
+# ToDo: Remove tokens before making the code publicly available.
+HF_TOKEN= "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"
+OAI_API_KEY = "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"
+
+
 class Summarization():
     '''
     The Summarization object is responsible for implementing different methods to summarize a text (e.g. main text of the news).
@@ -54,20 +70,4 @@ class Summarization():
         return response.json()[0]["summary_text"]
 
 
-PROMPT_TEMPLATES = {
-    "PubHealth": {
-        "veracity" : {
-            "basic": ("Context: {}\nClaim: {}\nclaim is {}\n")
-        },
-        "explanation": {
-            "basic": ("Context: {}\nClaim: {}\nclaim is {}\nWhy? {}\n")
-            }
-    }
-}
-
 SUMMARIZATION_KEY_VAL= {"false": None, "gpt3": Summarization.gpt3, "bart":Summarization.bart_large_cnn}
-
-# ToDo: Remove tokens before making the code publicly available.
-HF_TOKEN= "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"
-OAI_API_KEY = "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"
-

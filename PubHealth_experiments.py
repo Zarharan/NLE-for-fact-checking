@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
         gpt3_zero_shot_df = pd.DataFrame(selected_instances)
         # save results in a csv file
-        gpt3_zero_shot_df.to_csv(f"data/pubhealth/prompts/gpt3_zero_shot_{args.seed}.csv")
+        gpt3_zero_shot_df.to_csv(f"data/pubhealth/prompts/gpt3_zero_{str(len(selected_instances))}_{args.seed}.csv")
 
 
     # View result
