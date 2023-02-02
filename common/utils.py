@@ -1,5 +1,6 @@
 import requests
 import openai
+from rouge_score import rouge_scorer
 
 
 PROMPT_TEMPLATES = {

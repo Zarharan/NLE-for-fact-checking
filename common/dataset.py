@@ -74,7 +74,7 @@ class PubHealthDataset():
 
 
   def get_k_rand_instances(self, k_per_class= 2, k_rand_instance=1, target_set= 'train'
-    , random_seed= 313, summarization_method= None):
+    , random_seed= 313, summarization_method= None, summarization_max_token= 200):
     ''' This function selects k1 instances per label and k2 instances regardless of class randomly and cleans them by using pre_processor object.
     
     :param k_per_class: The number of random samples per class.
@@ -87,6 +87,8 @@ class PubHealthDataset():
     :type random_seed: int
     :param summarization_method: The method to summarize the main text of the news
     :type summarization_method: function
+    :param summarization_max_token: The max number of tokens for generated summary
+    :type summarization_max_token: int    
 
     :returns: List of Cleaned examples
     :rtype: list
@@ -128,8 +130,10 @@ class PubHealthDataset():
           ,"main_text":self.pre_processor.clean_text(row['main_text']),"label":row['label']
           , "explanation":self.pre_processor.clean_text(row['explanation'])}
       
+      sample["summarized_main_text"]= ["main_text"]
       if summarization_method:
-        sample["summarized_main_text"]= summarization_method(sample["main_text"])
+        sample["summarized_main_text"]= summarization_method(sample["main_text"], summarization_max_token)
+        
       
       self.k_rand_clean_examples.append(sample)
 

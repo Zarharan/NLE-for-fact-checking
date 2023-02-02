@@ -23,7 +23,7 @@ class NLEGeneration():
     '''
 
     for target_instance in target_instances:
-      target_instance['prompt'] =pattern.format(target_instance['main_text'], target_instance['claim']
+      target_instance['prompt'] =pattern.format(target_instance['summarized_main_text'], target_instance['claim']
         , target_instance['label'], "" if type=="zero" else target_instance['explanation'])
             
     return target_instances
@@ -80,7 +80,7 @@ class NLEGeneration():
     ''' This function explain veracity of instances by using GPT-3 zero-shot.
 
     :param target_instances: The input text 
-    :type target_instances: str
+    :type target_instances: list
     :param pattern: The target pattern to create the prompt 
     :type pattern: str    
     :param max_tokens: The maximum number of tokens for generated text
@@ -103,7 +103,7 @@ class NLEGeneration():
     ''' This function explain veracity of instances by using gpt-j-6B zero-shot.
 
     :param target_instances: The input text 
-    :type target_instances: str
+    :type target_instances: list
     :param pattern: The target pattern to create the prompt 
     :type pattern: str    
     :param max_tokens: The maximum number of tokens for generated text
@@ -124,3 +124,34 @@ class NLEGeneration():
     return target_instances    
 
 
+  def gpt3_few_shot(self, demonstration_instances, test_instances, pattern, max_tokens= 200):
+    ''' This function explain veracity of instances by using GPT-3 few-shot.
+
+    :param demonstration_instances: The target instances to create the demonstration section of the prompt
+    :type demonstration_instances: list
+    :param test_instances: The target instances to infer by prompt paradigm
+    :type test_instances: list    
+    :param pattern: The target pattern to create the prompt 
+    :type pattern: str    
+    :param max_tokens: The maximum number of tokens for generated text
+    :type max_tokens: str
+
+    :returns: An input instance list with generated explanation added to each instance
+    :rtype: list
+    '''
+    
+    # Create the demonstration section of the prompt
+    self.__prompt(demonstration_instances, pattern, type="few")
+    demonstration_str= ""
+    for item in demonstration_instances:
+      demonstration_str+= item["prompt"] + "###\n"
+
+    # Create propmt for test instances. Add the demonstration section at the begining of each instances.
+    self.__prompt(test_instances, pattern, type="zero")
+    for item in test_instances:
+      item["prompt"]= demonstration_str + item["prompt"]
+
+    for target_instance in test_instances:
+      target_instance['result']= self.__gpt3_query(target_instance['prompt'], max_tokens)
+    
+    return test_instances    
