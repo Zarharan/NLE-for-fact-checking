@@ -52,8 +52,8 @@ if __name__ == "__main__":
     pubhealth_dataset= PubHealthDataset(train_path= args.train_path, val_path= args.val_path, test_path= args.test_path)
 
     # create NLEGeneration object and create zero or few shot prompts
-    nle_generator = NLEGeneration()
     template= args.prompt_template.split("/")
+    nle_generator = NLEGeneration(PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]])
 
     propmt_result= []
 
@@ -63,11 +63,11 @@ if __name__ == "__main__":
             , random_seed= args.seed, summarization_method= SUMMARIZATION_KEY_VAL[args.summarize]
             , summarization_max_token= args.summarization_max_token)
         
-        nle_generator.gpt3_zero_shot(selected_instances, PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]])
+        nle_generator.zero_shot(selected_instances)
 
         gpt3_zero_shot_df = pd.DataFrame(selected_instances)
         # save results in a csv file
-        gpt3_zero_shot_df.to_csv(f"data/pubhealth/prompts/gpt3_zero_{str(len(selected_instances))}_{args.seed}.csv")
+        gpt3_zero_shot_df.to_csv(f"data/pubhealth/prompts/{nle_generator.selected_plm}_zero_{args.k_per_class}.{args.k_rand_instance}_{len(selected_instances)}_{args.seed}.csv")
         propmt_result= selected_instances
     
     elif args.prompt_type == "few":
@@ -82,12 +82,11 @@ if __name__ == "__main__":
             , random_seed= args.seed, summarization_method= SUMMARIZATION_KEY_VAL[args.summarize]
             , summarization_max_token= args.summarization_max_token)
         
-        nle_generator.gpt3_few_shot(demonstration_instances, test_instances
-            , PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]])
+        nle_generator.few_shot(demonstration_instances, test_instances)
 
         gpt3_few_shot_df = pd.DataFrame(test_instances)
         # save results in a csv file
-        gpt3_few_shot_df.to_csv(f"data/pubhealth/prompts/gpt3_few_demon{args.k_per_class}.{args.k_rand_instance}_{len(test_instances)}_{args.seed}.csv")
+        gpt3_few_shot_df.to_csv(f"data/pubhealth/prompts/{nle_generator.selected_plm}_few_demon{args.k_per_class}.{args.k_rand_instance}_{len(test_instances)}_{args.seed}.csv")
         
         propmt_result= test_instances
 

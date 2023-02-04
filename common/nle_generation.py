@@ -3,70 +3,84 @@ import json
 
 
 class NLEGeneration():
+  '''
+  By using NLEGeneration object we can generate explanation.
+  
+  :param prompt_template: The target template to create the prompt
+  :type prompt_template: str
+  :param temperature: To set the randomness of generated text (between 0 and 1, with 0 being the most predictable and 1 being the most random)
+  :type temperature: float
+  :param max_tokens: The maximum number of tokens for generated text
+  :type max_tokens: int
+  :param plm: The target pre-trained language model for few/zero shot learning
+  :type plm: str  
 
-  def __init(self):
-    pass
+  :ivar plms: List of possible pre-trained language models to select
+  :vartype plms: list
+  '''
+
+  def __init__(self, prompt_template, plm="gpt3", temperature= 0.2, max_tokens= 200):
+    self.temperature= temperature
+    self.max_tokens= max_tokens
+    self.prompt_template= prompt_template
+    self.selected_plm= plm
+    
+    self.plms= {"gpt3": {"api_func": self.__openai_query, "engine": "text-davinci-003"}
+      , "gptj": {"api_func": self.__hf_models_query, "model_name": "EleutherAI/gpt-j-6B"}}
 
 
-  def __prompt(self, target_instances, pattern, type="zero"):
+  def __prompt(self, target_instances, type="zero"):
     ''' This function creates appropriate prompt for the input instances.
 
     :param target_instances: The input instances to create prompt for them
     :type target_instances: str
-    :param pattern: The pattern to apply on the input text to create prompt
-    :type pattern: str
     :param type: By using zero, the prompt does not include the gold explanation
     :type type: str
 
-    :returns: An input instance list with prompts added to each instance
+    :returns: The input instance list with prompts added to each instance
     :rtype: list
     '''
 
     for target_instance in target_instances:
-      target_instance['prompt'] =pattern.format(target_instance['summarized_main_text'], target_instance['claim']
+      target_instance['prompt'] = self.prompt_template.format(target_instance['summarized_main_text'], target_instance['claim']
         , target_instance['label'], "" if type=="zero" else target_instance['explanation'])
             
     return target_instances
 
 
-  def __gpt3_query(self, prompt, max_tokens):
+  def __openai_query(self, prompt):
     ''' This function send a query to GPT-3.
 
-    :param prompt: The target prompt 
+    :param prompt: The target prompt
     :type prompt: str
-    :param max_tokens: The maximum number of tokens for generated text
-    :type max_tokens: str
 
     :returns: The generated text
     :rtype: str
     '''
 
     openai.api_key= OAI_API_KEY
-    response = openai.Completion.create(engine="text-davinci-002", prompt= prompt, temperature=0.2
-      , max_tokens=max_tokens, top_p=1, frequency_penalty=0, presence_penalty=0)
+    response = openai.Completion.create(engine= self.plms["gpt3"]["engine"], prompt= prompt
+    , temperature= self.temperature , max_tokens= self.max_tokens, top_p=1, frequency_penalty=0
+    , presence_penalty=0)
     
     return response.choices[0].text
 
 
-  def __hf_models_query(self, prompt, max_tokens, model_name):
+  def __hf_models_query(self, prompt):
     ''' This function send a query to HuggingFace models.
 
     :param prompt: The target prompt 
     :type prompt: str
-    :param max_tokens: The maximum number of tokens for generated text
-    :type max_tokens: str
-    :param model_name: The name of HuggingFace model
-    :type model_name: str
 
     :returns: The generated text
     :rtype: str
     '''
 
-    API_URL = f"https://api-inference.huggingface.co/models/{model_name}"
+    API_URL = f"https://api-inference.huggingface.co/models/{self.plms['gptj']['model_name']}"
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     parameters = {
-        'max_new_tokens':max_tokens,  # number of generated tokens
-        'temperature': 0.2,   # controlling the randomness of generations
+        'max_new_tokens': self.max_tokens,  # number of generated tokens
+        'temperature': self.temperature,   # controlling the randomness of generations
         'end_sequence': "###" # stopping sequence for generation
     }
     options={'use_cache': True}
@@ -76,82 +90,85 @@ class NLEGeneration():
     return response.json()[0]['generated_text']
 
 
-  def gpt3_zero_shot(self, target_instances, pattern, max_tokens= 200):
-    ''' This function explain veracity of instances by using GPT-3 zero-shot.
-
-    :param target_instances: The input text 
-    :type target_instances: list
-    :param pattern: The target pattern to create the prompt 
-    :type pattern: str    
-    :param max_tokens: The maximum number of tokens for generated text
-    :type max_tokens: str
-
-    :returns: An input instance list with generated explanation added to each instance
-    :rtype: list
-    '''
-    
-    # create appropriate prompt
-    self.__prompt(target_instances, pattern, type="zero")
-
-    for target_instance in target_instances:
-      target_instance['result']= self.__gpt3_query(target_instance['prompt'], max_tokens)
-    
-    return target_instances
-
-
-  def gpt_j_zero_shot(self, target_instances, pattern, max_tokens= 200):
-    ''' This function explain veracity of instances by using gpt-j-6B zero-shot.
-
-    :param target_instances: The input text 
-    :type target_instances: list
-    :param pattern: The target pattern to create the prompt 
-    :type pattern: str    
-    :param max_tokens: The maximum number of tokens for generated text
-    :type max_tokens: str
-
-    :returns: An input instance list with generated explanation added to each instance
-    :rtype: list
-    '''
-    
-    # create appropriate prompt
-    self.__prompt(target_instances, pattern, type="zero")
-
-    for target_instance in target_instances:       
-      target_instance['result']= self.__hf_models_query(target_instance['prompt'], max_tokens
-        , "EleutherAI/gpt-j-6B")        
-      target_instance['result']= response.json()[0]['generated_text']
-            
-    return target_instances    
-
-
-  def gpt3_few_shot(self, demonstration_instances, test_instances, pattern, max_tokens= 200):
-    ''' This function explain veracity of instances by using GPT-3 few-shot.
+  def __get_few_shot_demonstration(self, demonstration_instances, test_instances):
+    ''' This function generates the few shot prompt including demonstration examples.
 
     :param demonstration_instances: The target instances to create the demonstration section of the prompt
     :type demonstration_instances: list
     :param test_instances: The target instances to infer by prompt paradigm
     :type test_instances: list    
-    :param pattern: The target pattern to create the prompt 
-    :type pattern: str    
-    :param max_tokens: The maximum number of tokens for generated text
-    :type max_tokens: str
 
-    :returns: An input instance list with generated explanation added to each instance
+    :returns: The input instance list with the few shot prompt including demonstration examples
     :rtype: list
     '''
     
     # Create the demonstration section of the prompt
-    self.__prompt(demonstration_instances, pattern, type="few")
+    self.__prompt(demonstration_instances, type="few")
     demonstration_str= ""
     for item in demonstration_instances:
       demonstration_str+= item["prompt"] + "###\n"
 
     # Create propmt for test instances. Add the demonstration section at the begining of each instances.
-    self.__prompt(test_instances, pattern, type="zero")
+    self.__prompt(test_instances, type="zero")
     for item in test_instances:
       item["prompt"]= demonstration_str + item["prompt"]
-
-    for target_instance in test_instances:
-      target_instance['result']= self.__gpt3_query(target_instance['prompt'], max_tokens)
     
-    return test_instances    
+    return test_instances
+
+
+  def __check_plm(func):
+    
+    '''
+    This is a decorator to check the selected PLM for the functions.
+    '''
+    def wrapper(self, *args, **kwargs):
+
+      assert self.selected_plm in self.plms.keys(), f"Please select one of {self.plms.keys()} as PLM."
+
+      func_result = func(self, *args, **kwargs)
+      return func_result
+
+    return wrapper
+
+
+  @__check_plm
+  def zero_shot(self, target_instances):
+    ''' This function explain veracity of instances by using zero-shot and selected plm.
+
+    :param target_instances: The input text 
+    :type target_instances: list
+
+    :returns: An input instance list with generated explanation added to each instance
+    :rtype: list
+    '''
+    
+    # create appropriate prompt
+    self.__prompt(target_instances, type="zero")
+
+    for target_instance in target_instances:       
+      target_instance['result']= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
+            
+    return target_instances
+
+
+  @__check_plm
+  def few_shot(self, demonstration_instances, test_instances):
+    ''' This function explain veracity of instances by using few-shot learning.
+
+    :param demonstration_instances: The target instances to create the demonstration section of the prompt
+    :type demonstration_instances: list
+    :param test_instances: The target instances to infer by prompt paradigm
+    :type test_instances: list
+
+    :returns: An input instance list with generated explanation added to each instance
+    :rtype: list
+    '''
+
+    # Create the the prompt for in-context learning
+    self.__get_few_shot_demonstration(demonstration_instances, test_instances)
+
+    # Call the API
+    for target_instance in test_instances:
+      target_instance['result']= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
+    
+    return test_instances
