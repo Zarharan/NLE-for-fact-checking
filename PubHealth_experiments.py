@@ -3,10 +3,10 @@ from common.nle_generation import NLEGeneration
 from common.utils import *
 import argparse
 import pandas as pd
+from pathlib import Path
 
-if __name__ == "__main__":
-    # stuff only to run when not called via 'import' here
 
+def main():
     # Initialize parser
     parser = argparse.ArgumentParser()
     
@@ -41,19 +41,46 @@ if __name__ == "__main__":
     
 
     # Read arguments from command line
-    args = parser.parse_args()
-    
+    args = parser.parse_args()    
     assert args.train_path, "At least enter the train set path!"
+
+    # create NLEGeneration object and create zero or few shot prompts
+    template= args.prompt_template.split("/")
+    nle_generator = NLEGeneration(PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]])
+    
+    # number of instances to test for few shot
+    instances_no= args.test_instances_no
+    if args.prompt_type == "zero": # number of instances to test for zero shot
+        instances_no = 4 * args.k_per_class + args.k_rand_instance
+    
+    # File name to save the results of the experiment for the selected configuration
+    result_file_name= f"data/pubhealth/prompts/{nle_generator.selected_plm}_{args.prompt_type}_{args.k_per_class}_{args.k_rand_instance}_{instances_no}_{args.seed}.csv"
+    
+    # Check whether the file containing the results of the experiment for the selected configuration exists or not.
+    path = Path(result_file_name)    
+    if path.is_file():
+        print("There is a file containing the results of the experiment for the selected configuration!")
+        print("The file name: ",result_file_name)
+        print("Do you want to continue?")
+        input_command = input('Enter c to continue, any other key to cancel and exit ... ').strip()[0]
+        if input_command != "c" and input_command != "C":
+            print("The experiment was canceled!")
+            return
+        
+        print("Write a new name for the result file or press enter key to continue and replace the new result with the existing one.")
+        input_file_name = input().strip()
+
+        if len(input_file_name)== 0:
+            print("The new results will be replaced with the existing one!")
+        else:            
+            result_file_name= f"data/pubhealth/prompts/{input_file_name}.csv"
+            print(f"new file name is: {result_file_name}")
 
     # Object for summarization the main text of the news
     summarization= Summarization()
 
     # create the dataset object to read examples
     pubhealth_dataset= PubHealthDataset(train_path= args.train_path, val_path= args.val_path, test_path= args.test_path)
-
-    # create NLEGeneration object and create zero or few shot prompts
-    template= args.prompt_template.split("/")
-    nle_generator = NLEGeneration(PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]])
 
     propmt_result= []
 
@@ -67,7 +94,7 @@ if __name__ == "__main__":
 
         gpt3_zero_shot_df = pd.DataFrame(selected_instances)
         # save results in a csv file
-        gpt3_zero_shot_df.to_csv(f"data/pubhealth/prompts/{nle_generator.selected_plm}_zero_{args.k_per_class}.{args.k_rand_instance}_{len(selected_instances)}_{args.seed}.csv")
+        gpt3_zero_shot_df.to_csv(result_file_name)
         propmt_result= selected_instances
     
     elif args.prompt_type == "few":
@@ -86,21 +113,27 @@ if __name__ == "__main__":
 
         gpt3_few_shot_df = pd.DataFrame(test_instances)
         # save results in a csv file
-        gpt3_few_shot_df.to_csv(f"data/pubhealth/prompts/{nle_generator.selected_plm}_few_demon{args.k_per_class}.{args.k_rand_instance}_{len(test_instances)}_{args.seed}.csv")
+        gpt3_few_shot_df.to_csv(result_file_name)
         
         propmt_result= test_instances
 
-    # View result
+    # View and check result
     for item in propmt_result:
         print("-" * 50)
         print(item["prompt"])
         print("-"*20)
         print(item['result'])
 
+
+if __name__ == "__main__":
+    # stuff only to run when not called via 'import' here
+
+    main()
+
     
 #  A sample of zero shot inference with summarization by using gpt3 and select from test set
-# python PubHealth_experiments.py -summarize gpt3 -k_per_class 1 -k_rand_instance 0 -test_path data/pubhealth/test.tsv
+# python PubHealth_experiments.py -summarize bart -k_per_class 1 -k_rand_instance 0 -test_path data/pubhealth/test.tsv
 
 #  A sample of few shot inference with summarization by using gpt3
 # and select four samples (one per class) for demonestration section of the prompt
-# python PubHealth_experiments.py -k_per_class 1 -k_rand_instance 0 -test_path data/pubhealth/test.tsv -summarize gpt3 -prompt_type few -summarization_max_token 150
+# python PubHealth_experiments.py -k_per_class 1 -k_rand_instance 0 -test_path data/pubhealth/test.tsv -summarize bart -prompt_type few -summarization_max_token 150
