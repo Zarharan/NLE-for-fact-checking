@@ -94,7 +94,6 @@ class PubHealthDataset():
     :rtype: list
     '''
 
-    np.random.seed(random_seed)
     assert target_set in ['train', 'val', 'test'], f"Acceptable values for target_set are {all_available_sets}."
 
     if target_set== "train":
@@ -107,6 +106,7 @@ class PubHealthDataset():
       assert self.df_orginal_testset is not None, "Please read the test set at first!"
       temp_df= self.df_orginal_testset.loc[self.df_orginal_testset['label'].isin(self.label_space)]
 
+    np.random.seed(random_seed)
     rand_instances_df= None
     self.k_rand_clean_examples= []
 
@@ -120,10 +120,10 @@ class PubHealthDataset():
     # select k random instances regardless of class
     if k_rand_instance>0:
       if k_per_class> 0:
-        rand_instances_df= pd.concat([temp_df[~temp_df["claim_id"].isin(rand_instances_df['claim_id'])].sample(k_rand_instance)
+        rand_instances_df= pd.concat([temp_df[~temp_df["claim_id"].isin(rand_instances_df['claim_id'])].sample(n=k_rand_instance, random_state= random_seed)
           ,rand_instances_df])
       else:
-        rand_instances_df= temp_df.sample(k_rand_instance)
+        rand_instances_df= temp_df.sample(n=k_rand_instance, random_state= random_seed)
 
     for index, row in rand_instances_df.iterrows():
       sample= {"claim":self.pre_processor.clean_text(row['claim'])
