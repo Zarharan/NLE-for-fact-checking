@@ -1,6 +1,8 @@
 import requests
 import openai
 from rouge_score import rouge_scorer
+from openai.error import RateLimitError
+import backoff
 
 
 PROMPT_TEMPLATES = {
@@ -16,7 +18,7 @@ PROMPT_TEMPLATES = {
 
 # ToDo: Remove tokens before making the code publicly available.
 HF_TOKEN= "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"
-OAI_API_KEY = "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"
+OAI_API_KEY = "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"
 
 
 class Summarization():
@@ -26,6 +28,8 @@ class Summarization():
     def __init__(self):
         pass
 
+
+    @backoff.on_exception(backoff.expo, RateLimitError)
     @staticmethod
     def gpt3(text_for_summary, max_tokens=200):
         ''' This function gets a text and summarizes it by generating at most max_tokens by using GPT-3.
@@ -40,11 +44,12 @@ class Summarization():
         '''
 
         openai.api_key= OAI_API_KEY
-        text_for_summary+= " TL;DR: "
-        response = openai.Completion.create(engine="text-davinci-002", prompt=text_for_summary
-            , temperature=0.2,max_tokens=max_tokens, top_p=1, frequency_penalty=0, presence_penalty=0)
+        text_for_summary+= "\nTL;DR:\n"
+        response = openai.Completion.create(engine="text-davinci-003", prompt=text_for_summary
+            , temperature=0.3,max_tokens=max_tokens, top_p=1, frequency_penalty=0, presence_penalty=0)
 
         return response.choices[0].text
+
 
     @staticmethod
     def bart_large_cnn(text_for_summary, max_tokens=200):
