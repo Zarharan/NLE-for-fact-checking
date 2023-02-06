@@ -1,5 +1,7 @@
 from common.utils import *
 import json
+from openai.error import RateLimitError
+import backoff
 
 
 class NLEGeneration():
@@ -48,6 +50,7 @@ class NLEGeneration():
     return target_instances
 
 
+  @backoff.on_exception(backoff.expo, RateLimitError)
   def __openai_query(self, prompt):
     ''' This function send a query to GPT-3.
 
@@ -144,9 +147,12 @@ class NLEGeneration():
     
     # create appropriate prompt
     self.__prompt(target_instances, type="zero")
-
-    for target_instance in target_instances:       
+    
+    total_instances= len(target_instances)
+    for index, target_instance in enumerate(target_instances):
+      print(f"Generating explanation for {index+1}/{total_instances} ...")
       target_instance['result']= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
+      
             
     return target_instances
 
@@ -168,7 +174,9 @@ class NLEGeneration():
     self.__get_few_shot_demonstration(demonstration_instances, test_instances)
 
     # Call the API
-    for target_instance in test_instances:
+    total_instances= len(test_instances)
+    for index, target_instance in enumerate(test_instances):
+      print(f"Generating explanation for {index+1}/{total_instances} ...")      
       target_instance['result']= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
     
     return test_instances

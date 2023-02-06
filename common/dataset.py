@@ -74,7 +74,8 @@ class PubHealthDataset():
 
 
   def get_k_rand_instances(self, k_per_class= 2, k_rand_instance=1, target_set= 'train'
-    , random_seed= 313, summarization_method= None, summarization_max_token= 200):
+    , random_seed= 313, summarization_method= None, summarization_max_token= 200
+    , exclude_claim_ids= None):
     ''' This function selects k1 instances per label and k2 instances regardless of class randomly and cleans them by using pre_processor object.
     
     :param k_per_class: The number of random samples per class.
@@ -89,6 +90,8 @@ class PubHealthDataset():
     :type summarization_method: function
     :param summarization_max_token: The max number of tokens for generated summary
     :type summarization_max_token: int    
+    :param exclude_claim_ids: You can exclude instances by passing related claim IDs if you selected them before and don't want to select them again.
+    :type exclude_claim_ids: list or series    
 
     :returns: List of Cleaned examples
     :rtype: list
@@ -105,6 +108,10 @@ class PubHealthDataset():
     else:
       assert self.df_orginal_testset is not None, "Please read the test set at first!"
       temp_df= self.df_orginal_testset.loc[self.df_orginal_testset['label'].isin(self.label_space)]
+
+    # Exclude claim Ids that we do not want to select them
+    if exclude_claim_ids is not None:
+      temp_df= temp_df[~temp_df["claim_id"].isin(exclude_claim_ids)]
 
     np.random.seed(random_seed)
     rand_instances_df= None
@@ -123,18 +130,24 @@ class PubHealthDataset():
         rand_instances_df= pd.concat([temp_df[~temp_df["claim_id"].isin(rand_instances_df['claim_id'])].sample(n=k_rand_instance, random_state= random_seed)
           ,rand_instances_df])
       else:
-        rand_instances_df= temp_df.sample(n=k_rand_instance, random_state= random_seed)
+        rand_instances_df= temp_df.sample(n=k_rand_instance, random_state= random_seed)    
 
     for index, row in rand_instances_df.iterrows():
-      sample= {"claim":self.pre_processor.clean_text(row['claim'])
-          ,"main_text":self.pre_processor.clean_text(row['main_text']),"label":row['label']
-          , "explanation":self.pre_processor.clean_text(row['explanation'])}
+      main_text= self.pre_processor.clean_text(row['main_text'])
+      sample= {"claim_id":row['claim_id']
+          ,"claim":self.pre_processor.clean_text(row['claim'])
+          ,"main_text":main_text,"label":row['label']
+          , "explanation":self.pre_processor.clean_text(row['explanation'])
+          , "summarized_main_text": main_text}
       
-      sample["summarized_main_text"]= ["main_text"]
-      if summarization_method:
+      self.k_rand_clean_examples.append(sample)  
+
+    print(f"The instances were read successfully from {target_set}.")
+
+    if summarization_method:
+      for sample in self.k_rand_clean_examples:
+        print(f"claim Id: {sample['claim_id']}")
         sample["summarized_main_text"]= summarization_method(sample["main_text"], summarization_max_token)
-        
-      
-      self.k_rand_clean_examples.append(sample)
+      print(f"Successfully summarized the main text of the instances read from {target_set}.")
 
     return self.k_rand_clean_examples

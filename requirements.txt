@@ -5,4 +5,5 @@ bs4==0.0.1
 pathlib==1.0.1
 requests==2.28.2
 rouge-score==0.1.2
+backoff==2.2.1
 openai

@@ -54,7 +54,8 @@ def main():
         instances_no = 4 * args.k_per_class + args.k_rand_instance
     
     # File name to save the results of the experiment for the selected configuration
-    result_file_name= f"data/pubhealth/prompts/{nle_generator.selected_plm}_{args.prompt_type}_{args.k_per_class}_{args.k_rand_instance}_{instances_no}_{args.seed}.csv"
+    save_path= "data/pubhealth/prompts/"
+    result_file_name= f"{save_path}{nle_generator.selected_plm}_{args.prompt_type}_{args.k_per_class}_{args.k_rand_instance}_{instances_no}_{args.seed}.csv"
     
     # Check whether the file containing the results of the experiment for the selected configuration exists or not.
     path = Path(result_file_name)    
@@ -73,7 +74,7 @@ def main():
         if len(input_file_name)== 0:
             print("The new results will be replaced with the existing one!")
         else:            
-            result_file_name= f"data/pubhealth/prompts/{input_file_name}.csv"
+            result_file_name= f"{save_path}{input_file_name}.csv"
             print(f"new file name is: {result_file_name}")
 
     # Object for summarization the main text of the news
@@ -107,7 +108,8 @@ def main():
         test_instances= pubhealth_dataset.get_k_rand_instances(k_per_class= 0
             , k_rand_instance=args.test_instances_no, target_set= args.test_target_set
             , random_seed= args.seed, summarization_method= SUMMARIZATION_KEY_VAL[args.summarize]
-            , summarization_max_token= args.summarization_max_token)
+            , summarization_max_token= args.summarization_max_token
+            , exclude_claim_ids= pd.DataFrame(demonstration_instances)['claim_id'])
         
         nle_generator.few_shot(demonstration_instances, test_instances)
 
@@ -117,12 +119,7 @@ def main():
         
         propmt_result= test_instances
 
-    # View and check result
-    for item in propmt_result:
-        print("-" * 50)
-        print(item["prompt"])
-        print("-"*20)
-        print(item['result'])
+    print(f"The experiment Done! the result was saved at {result_file_name}")
 
 
 if __name__ == "__main__":
@@ -136,4 +133,4 @@ if __name__ == "__main__":
 
 #  A sample of few shot inference with summarization by using gpt3
 # and select four samples (one per class) for demonestration section of the prompt
-# python PubHealth_experiments.py -k_per_class 1 -k_rand_instance 0 -test_path data/pubhealth/test.tsv -summarize bart -prompt_type few -summarization_max_token 150
+# python PubHealth_experiments.py -k_per_class 1 -k_rand_instance 0 -test_path data/pubhealth/test.tsv -summarize bart -prompt_type few -summarization_max_token 300
