@@ -29,7 +29,9 @@ def main():
     , help = "Whether summarize the main text of the news or not"
     , default='false', choices=['false', 'gpt3', 'bart'])
     parser.add_argument("-summarization_max_token", "--summarization_max_token", help = "The max number of tokens for generated summary."
-    , default=200, type= int)    
+    , default=200, type= int)
+    parser.add_argument("-summarization_temperature", "--summarization_temperature", help = "To set the randomness of generated summary."
+    , default=0.5, type= float)
     parser.add_argument("-seed", "--seed", help = "seed for random function. Pass None for select different instances randomly."
     , default=313, type= int)
     parser.add_argument("-prompt_template", "--prompt_template", help = "The target template to create prompt"
@@ -38,7 +40,8 @@ def main():
     , default='zero', choices=['zero', 'few'])
     parser.add_argument("-test_instances_no", "--test_instances_no", help = "The number of test instances"
     , default=20, type= int)
-    
+    parser.add_argument("-nle_temperature", "--nle_temperature", help = "To set the randomness of generated explanation."
+    , default=0.5, type= float)    
 
     # Read arguments from command line
     args = parser.parse_args()    
@@ -46,7 +49,8 @@ def main():
 
     # create NLEGeneration object and create zero or few shot prompts
     template= args.prompt_template.split("/")
-    nle_generator = NLEGeneration(PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]])
+    nle_generator = NLEGeneration(PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]],
+        max_tokens= 300, temperature= args.nle_temperature)
     
     # number of instances to test for few shot
     instances_no= args.test_instances_no
@@ -78,7 +82,10 @@ def main():
             print(f"new file name is: {result_file_name}")
 
     # Object for summarization the main text of the news
-    summarization= Summarization()
+    summarization= None
+    if args.summarize != "false":
+        summarization= Summarization(max_tokens= args.summarization_max_token
+        , temperature= args.summarization_temperature, model_name= args.summarize)
 
     # create the dataset object to read examples
     pubhealth_dataset= PubHealthDataset(train_path= args.train_path, val_path= args.val_path, test_path= args.test_path)
@@ -88,8 +95,7 @@ def main():
     if args.prompt_type == "zero":
         selected_instances= pubhealth_dataset.get_k_rand_instances(k_per_class= args.k_per_class
             , k_rand_instance=args.k_rand_instance, target_set= args.test_target_set
-            , random_seed= args.seed, summarization_method= SUMMARIZATION_KEY_VAL[args.summarize]
-            , summarization_max_token= args.summarization_max_token)
+            , random_seed= args.seed, summarization_obj= summarization)
         
         nle_generator.zero_shot(selected_instances)
 
@@ -102,13 +108,11 @@ def main():
 
         demonstration_instances= pubhealth_dataset.get_k_rand_instances(k_per_class= args.k_per_class
             , k_rand_instance=args.k_rand_instance, target_set= args.demon_target_set
-            , random_seed= args.seed, summarization_method= SUMMARIZATION_KEY_VAL[args.summarize]
-            , summarization_max_token= args.summarization_max_token)
+            , random_seed= args.seed, summarization_obj= summarization)
 
         test_instances= pubhealth_dataset.get_k_rand_instances(k_per_class= 0
             , k_rand_instance=args.test_instances_no, target_set= args.test_target_set
-            , random_seed= args.seed, summarization_method= SUMMARIZATION_KEY_VAL[args.summarize]
-            , summarization_max_token= args.summarization_max_token
+            , random_seed= args.seed, summarization_obj= summarization
             , exclude_claim_ids= pd.DataFrame(demonstration_instances)['claim_id'])
         
         nle_generator.few_shot(demonstration_instances, test_instances)

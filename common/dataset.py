@@ -74,8 +74,7 @@ class PubHealthDataset():
 
 
   def get_k_rand_instances(self, k_per_class= 2, k_rand_instance=1, target_set= 'train'
-    , random_seed= 313, summarization_method= None, summarization_max_token= 200
-    , exclude_claim_ids= None):
+    , random_seed= 313, summarization_obj= None, exclude_claim_ids= None):
     ''' This function selects k1 instances per label and k2 instances regardless of class randomly and cleans them by using pre_processor object.
     
     :param k_per_class: The number of random samples per class.
@@ -86,10 +85,8 @@ class PubHealthDataset():
     :type target_set: str
     :param random_seed: seed for random function. Pass None for select different instances randomly.
     :type random_seed: int
-    :param summarization_method: The method to summarize the main text of the news
-    :type summarization_method: function
-    :param summarization_max_token: The max number of tokens for generated summary
-    :type summarization_max_token: int    
+    :param summarization_obj: The object to summarize the main text of the news
+    :type summarization_obj: function
     :param exclude_claim_ids: You can exclude instances by passing related claim IDs if you selected them before and don't want to select them again.
     :type exclude_claim_ids: list or series    
 
@@ -144,10 +141,9 @@ class PubHealthDataset():
 
     print(f"The instances were read successfully from {target_set}.")
 
-    if summarization_method:
+    if summarization_obj:
       for sample in self.k_rand_clean_examples:
-        print(f"claim Id: {sample['claim_id']}")
-        sample["summarized_main_text"]= summarization_method(sample["main_text"], summarization_max_token)
+        sample["summarized_main_text"]= summarization_obj.get_summary(sample["main_text"])
       print(f"Successfully summarized the main text of the instances read from {target_set}.")
 
     return self.k_rand_clean_examples
