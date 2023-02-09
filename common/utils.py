@@ -4,6 +4,7 @@ from rouge_score import rouge_scorer
 from openai.error import RateLimitError
 import backoff
 from data.pubhealth.models import *
+import math
 
 
 PROMPT_TEMPLATES = {
@@ -59,7 +60,15 @@ class Summarization():
         select_result= self.text_summary.select_summary(claim_id, self.model_name)
         if select_result:
             return select_result.summary
-            
+
+        # 1 token ~= ¾ words. 100 tokens ~= 75 words (Regarding OpenAI documentation)
+        # check the max tokens of the text and truncate if exceed
+        main_text_words= text_for_summary.split()
+        tolerance_no= 250
+        exceed_no= 4096 - (len(main_text_words) * (4/3) + self.max_tokens + tolerance_no)
+        if exceed_no<0:
+            text_for_summary= " ".join(main_text_words[:math.floor(exceed_no)])
+
         summary = ""
         if self.model_name== "bart":
             summary= self.__bart_large_cnn(text_for_summary)
