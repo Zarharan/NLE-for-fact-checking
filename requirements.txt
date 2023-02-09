@@ -8,4 +8,5 @@ rouge-score==0.1.2
 backoff==2.2.1
 sqlalchemy==2.0.2
 pytest==7.2.1
+mysql-connector-python==8.0.32
 openai

@@ -131,19 +131,18 @@ class PubHealthDataset():
 
     for index, row in rand_instances_df.iterrows():
       main_text= self.pre_processor.clean_text(row['main_text'])
-      sample= {"claim_id":row['claim_id']
+      self.k_rand_clean_examples.append({"claim_id":row['claim_id']
           ,"claim":self.pre_processor.clean_text(row['claim'])
           ,"main_text":main_text,"label":row['label']
           , "explanation":self.pre_processor.clean_text(row['explanation'])
-          , "summarized_main_text": main_text}
-      
-      self.k_rand_clean_examples.append(sample)  
+          , "summarized_main_text": main_text})  
 
     print(f"The instances were read successfully from {target_set}.")
 
     if summarization_obj:
       for sample in self.k_rand_clean_examples:
-        sample["summarized_main_text"]= summarization_obj.get_summary(sample["main_text"])
+        sample["summarized_main_text"]= summarization_obj.get_summary(sample["main_text"], sample["claim_id"])
+
       print(f"Successfully summarized the main text of the instances read from {target_set}.")
 
     return self.k_rand_clean_examples
