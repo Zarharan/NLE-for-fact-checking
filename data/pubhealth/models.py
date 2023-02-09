@@ -17,7 +17,7 @@ class SummaryModel(Base):
     main_text = Column(Text, nullable=False)
     summary = Column(Text, nullable=False)
     model_name= Column(String(32), nullable=False)
-    UniqueConstraint("claim_id", name="unique_claim_id")
+    UniqueConstraint("claim_id", "model_name" , name="unique_claim_id_model_name")
     
     
 class TextSummary():
