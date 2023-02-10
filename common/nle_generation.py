@@ -151,7 +151,7 @@ class NLEGeneration():
     total_instances= len(target_instances)
     for index, target_instance in enumerate(target_instances):
       print(f"Generating explanation for {index+1}/{total_instances} ...")
-      target_instance['result']= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
+      target_instance[self.selected_plm]= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
       
             
     return target_instances
@@ -177,6 +177,6 @@ class NLEGeneration():
     total_instances= len(test_instances)
     for index, target_instance in enumerate(test_instances):
       print(f"Generating explanation for {index+1}/{total_instances} ...")      
-      target_instance['result']= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
+      target_instance[self.selected_plm]= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
     
     return test_instances
