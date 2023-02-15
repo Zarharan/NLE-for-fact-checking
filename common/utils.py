@@ -1,12 +1,16 @@
 import requests
 import openai
-from rouge_score import rouge_scorer
 from openai.error import RateLimitError
 import backoff
 from data.pubhealth.models import *
 import math
+from torchmetrics.text.bert import BERTScore
+from torchmetrics import BLEUScore
+from torchmetrics.text.rouge import ROUGEScore
+import nltk
 
 
+# nltk.download('punkt')
 PROMPT_TEMPLATES = {
     "PubHealth": {
         "veracity" : {
@@ -122,3 +126,59 @@ class Summarization():
         }
         response = requests.post(API_URL, headers=headers, json=payload)
         return response.json()[0]["summary_text"]
+
+
+class NLEMetrics():
+
+    def __init__(self, pred_list = None, target_list= None
+        , bertscore_model= "microsoft/deberta-xlarge-mnli"):
+        
+        self.pred_list= pred_list
+        self.target_list= target_list
+        self.bertscore_model= bertscore_model
+        self.rouge= None
+        self.bertscore= None
+        self.bleu= None
+
+    def rouge_score(self):
+        
+        if self.rouge is None:
+            self.rouge = ROUGEScore()
+            
+        rouge_result= self.rouge(self.pred_list, self.target_list)
+
+        return rouge_result
+
+    
+    def bert_score(self):
+        
+        if self.bertscore is None:
+            self.bertscore = BERTScore(model_type= self.bertscore_model)
+
+        score = self.bertscore(self.pred_list, self.target_list)
+        rounded_score = {k: [round(v, 4) for v in vv] for k, vv in score.items()}
+        return rounded_score
+
+
+    def bleu_score(self):
+        
+        if self.bleu is None:
+            self.bleu = BLEUScore()        
+        
+        bleu_avg= 0
+        # Calculate the average bleu score for all instances in the list
+        for pred, target in zip(self.pred_list, self.target_list):
+            bleu_avg+= self.bleu([pred], [[target]]).item()
+
+        rounded_score = round(bleu_avg / len(self.target_list), 4)
+        return rounded_score
+
+
+    def get_all_metrics(self):
+        
+        bert_result= self.bert_score()
+        bert_avg= {f"{key}": round(sum(bert_result[key])/len(bert_result[key]), 4) for key in bert_result.keys()}
+
+        return {"rouge": self.rouge_score(), "bert": bert_avg, "bleu": self.bleu_score()}
+        
+        
