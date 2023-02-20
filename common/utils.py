@@ -129,7 +129,23 @@ class Summarization():
 
 
 class NLEMetrics():
+    '''
+    The NLEMetrics object is responsible for obtaining different metrics to evaluate a generated explanation.
 
+    :param pred_list: The list of generated explanation
+    :type pred_list: list
+    :param target_list: The list of ground truth explanation
+    :type target_list: list
+    :param bertscore_model: The model to calculate the BERTScore
+    :type bertscore_model: string
+
+    :ivar rouge: The object to calculate the rouge score
+    :vartype rouge: object
+    :ivar bertscore: The object to calculate the BERTScore
+    :vartype bertscore: object
+    :ivar bleu: The object to calculate the bleu score
+    :vartype bleu: object        
+    '''
     def __init__(self, pred_list = None, target_list= None
         , bertscore_model= "microsoft/deberta-xlarge-mnli"):
         
@@ -140,8 +156,14 @@ class NLEMetrics():
         self.bertscore= None
         self.bleu= None
 
+
     def rouge_score(self):
-        
+        ''' This function calculate the rouge score for pred_list regarding target_list.
+
+        :returns: The average rouge score for the list
+        :rtype: float
+        '''
+
         if self.rouge is None:
             self.rouge = ROUGEScore()
             
@@ -151,7 +173,12 @@ class NLEMetrics():
 
     
     def bert_score(self):
-        
+        ''' This function calculate the BERTScore for pred_list regarding target_list.
+
+        :returns: The average BERTScore for the list
+        :rtype: float
+        '''
+
         if self.bertscore is None:
             self.bertscore = BERTScore(model_type= self.bertscore_model)
 
@@ -161,7 +188,12 @@ class NLEMetrics():
 
 
     def bleu_score(self):
-        
+        ''' This function calculate the bleu score for pred_list regarding target_list.
+
+        :returns: The average bleu score for the list
+        :rtype: float
+        '''
+
         if self.bleu is None:
             self.bleu = BLEUScore()        
         
@@ -175,7 +207,12 @@ class NLEMetrics():
 
 
     def get_all_metrics(self):
-        
+        ''' This function calculate all scores to evaluate the pred_list regarding the target_list.
+
+        :returns: The average score for all metrics
+        :rtype: dict
+        '''
+
         bert_result= self.bert_score()
         bert_avg= {f"{key}": round(sum(bert_result[key])/len(bert_result[key]), 4) for key in bert_result.keys()}
 

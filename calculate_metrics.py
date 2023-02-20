@@ -6,6 +6,20 @@ import glob
 
 
 def report_metrics(file_path, pred_col_title, target_col_title, metrics_obj):
+    ''' This function read a file and report evaluation metrics for the generated explanation in the file.
+
+    :param file_path: The path to the file to report metrics for it
+    :type file_path: str
+    :param pred_col_title: The title of the prediction column to report metrics for it
+    :type pred_col_title: str
+    :param target_col_title: The title of target (ground truth) column to report metrics regarding it
+    :type target_col_title: str
+    :param metrics_obj: An instance of NLEMetrics class to obtain metrics
+    :type metrics_obj: object
+
+    :returns: The calculated metrics
+    :rtype: dict
+    '''
 
     path = Path(file_path)
     assert path.is_file(), f"Please enter a correct path to a csv file."
@@ -16,7 +30,11 @@ def report_metrics(file_path, pred_col_title, target_col_title, metrics_obj):
 
     print("-"*50)
     print(f"Calculating metrics for {file_path}:")
-    print(metrics_obj.get_all_metrics())
+
+    all_metrics= metrics_obj.get_all_metrics()
+    print(all_metrics)
+    
+    return all_metrics
 
 
 def main():
