@@ -74,7 +74,7 @@ class TextSummary():
 
 
     def select_summary(self, claim_id, model_name):
-        ''' This function add an object to the summaries table.
+        ''' This function select a record from the summaries table by claim_id and model_name.
 
         :param claim_id: The related claim ID to filter out a record
         :type claim_id: int
@@ -87,6 +87,59 @@ class TextSummary():
 
         select_result= self.session.query(SummaryModel).filter(SummaryModel.model_name== model_name,
             SummaryModel.claim_id== claim_id)
+        
+        if any(select_result):
+            return select_result[0]
+        
+        return None
+
+
+class Experiments():
+    '''
+    The Experiments object is responsible for creation of the experiments table and its CRUD operation.
+
+    :ivar session: A session object is the handle to database.
+    :vartype session: object        
+    '''
+    def __init__(self):
+        Session = sessionmaker(bind = db_engine)
+        self.session = Session()
+
+
+    def create_table(self):
+        ''' This function creates all tables that have not been created yet.
+
+        :returns: Nothing
+        :rtype: None
+        '''        
+        Base.metadata.create_all(db_engine)
+
+
+    def insert(self, experiment_data):
+        ''' This function add an object to the experiments table.
+
+        :param experiment_data: The object that contains experiment data
+        :type experiment_data: object
+
+        :returns: The ID of the created record
+        :rtype: int
+        '''
+        self.session.add(experiment_data)
+        self.session.commit()
+        return experiment_data.id
+
+
+    def select_experiment(self, args_hash):
+        ''' This function select a record from the experiments table by args_hash.
+
+        :param args_hash: The Hash of the input args for an experiment
+        :type args_hash: str
+
+        :returns: The experiment object of the selected record
+        :rtype: object
+        '''
+
+        select_result= self.session.query(ExperimentModel).filter(ExperimentModel.args_hash== args_hash)
         
         if any(select_result):
             return select_result[0]
