@@ -22,11 +22,25 @@ class SummaryModel(Base):
     model_name= Column(String(32), nullable=False) # the model name that summarized the main text
     # create a unique key for claim_id model_name pairs
     UniqueConstraint("claim_id", "model_name" , name="unique_claim_id_model_name")
+
+
+class ExperimentModel(Base):
+    '''
+    The ExperimentModel object is a model of a record from experiments table in the database
+    '''
+
+    __tablename__ = 'experiments'
+
+    id = Column(Integer, primary_key = True)
+    args = Column(Text, nullable=False) # The keys and values of the input arguments for an experiment
+    args_hash = Column(Text, nullable=False) # The Hash of the args
+    # create a unique key for args_hash
+    UniqueConstraint("args_hash" , name="unique_args_hash")
     
     
 class TextSummary():
     '''
-    The TextSummary object is responsible for creation of the summaries table and CRUD operation.
+    The TextSummary object is responsible for creation of the summaries table and its CRUD operation.
 
     :ivar session: A session object is the handle to database.
     :vartype session: object        
