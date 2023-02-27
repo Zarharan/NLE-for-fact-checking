@@ -1,7 +1,8 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Text
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Text, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import UniqueConstraint
+from sqlalchemy.orm import relationship
 
 
 Base = declarative_base()
@@ -33,11 +34,26 @@ class ExperimentModel(Base):
 
     id = Column(Integer, primary_key = True)
     args = Column(Text, nullable=False) # The keys and values of the input arguments for an experiment
-    args_hash = Column(Text, nullable=False) # The Hash of the args
+    args_hash = Column(String(64), nullable=False) # The Hash of the args
     # create a unique key for args_hash
     UniqueConstraint("args_hash" , name="unique_args_hash")
+    results = relationship("ExperimentResultModel", back_populates = "experiment")
     
-    
+
+class ExperimentResultModel(Base):
+    '''
+    The ExperimentResultModel object is a model of a record from results table that saves result of experiments in the database
+    '''
+
+    __tablename__ = 'results'
+
+    id = Column(Integer, primary_key = True)
+    experiment_id = Column(Integer, ForeignKey('experiments.id')) # The id of related experiment which this record belongs to
+    file_path = Column(Text, nullable=False) # The path of result file of an experiment
+    # create the relationship between experiments and results
+    experiment = relationship("ExperimentModel", back_populates = "results")
+
+
 class TextSummary():
     '''
     The TextSummary object is responsible for creation of the summaries table and its CRUD operation.
@@ -55,7 +71,7 @@ class TextSummary():
 
         :returns: Nothing
         :rtype: None
-        '''        
+        '''
         Base.metadata.create_all(db_engine)
 
 
@@ -111,7 +127,7 @@ class Experiments():
 
         :returns: Nothing
         :rtype: None
-        '''        
+        '''
         Base.metadata.create_all(db_engine)
 
 
@@ -144,4 +160,4 @@ class Experiments():
         if any(select_result):
             return select_result[0]
         
-        return None
+        return None       

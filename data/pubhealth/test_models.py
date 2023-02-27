@@ -44,9 +44,10 @@ def test_create_experiment_table(experiment_obj):
 
 
 @pytest.mark.experiments
-@pytest.mark.parametrize("args, args_hash",[("{'summarize': 'False', 'seed': '313'}", "cfba7b4862252f33a7d497e73824f99c4646cf21f2b318a9f21284d44825f912")])
-def test_insert_experiment(experiment_obj, args, args_hash):
+@pytest.mark.parametrize("args, args_hash, file_path",[("{'summarize': 'False', 'seed': '313'}", "cfba7b4862252f33a7d497e73824f99c4646cf21f2b318a9f21284d44825f912", "data/pubhealth/prompts/test.csv")])
+def test_insert_experiment(experiment_obj, args, args_hash, file_path):
    experiment_data= ExperimentModel(args= args, args_hash= args_hash)
+   experiment_data.results= [ExperimentResultModel(file_path = file_path)]
    assert experiment_obj.insert(experiment_data) > 0
 
 
