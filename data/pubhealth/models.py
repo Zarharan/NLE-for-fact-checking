@@ -15,14 +15,18 @@ class SummaryModel(Base):
     '''
 
     __tablename__ = 'summaries'
+    # create a unique key for claim_id model_name pairs
+    __table_args__ = (
+        UniqueConstraint("claim_id", "model_name" , name="unique_claim_id_model_name"),
+    )
 
     id = Column(Integer, primary_key = True)
     claim_id = Column(Integer, nullable=False)
     main_text = Column(Text, nullable=False) # Main text of an instance
     summary = Column(Text, nullable=False) # summarized text of the main text
     model_name= Column(String(32), nullable=False) # the model name that summarized the main text
-    # create a unique key for claim_id model_name pairs
-    UniqueConstraint("claim_id", "model_name" , name="unique_claim_id_model_name")
+    
+    # UniqueConstraint("claim_id", "model_name" , name="unique_claim_id_model_name")
 
 
 class ExperimentModel(Base):
@@ -34,10 +38,8 @@ class ExperimentModel(Base):
 
     id = Column(Integer, primary_key = True)
     args = Column(Text, nullable=False) # The keys and values of the input arguments for an experiment
-    args_hash = Column(String(64), nullable=False) # The Hash of the args
-    # create a unique key for args_hash
-    UniqueConstraint("args_hash" , name="unique_args_hash")
-    results = relationship("ExperimentResultModel", back_populates = "experiment")
+    args_hash = Column(String(64), unique=True, nullable=False) # The Hash of the args    
+    results = relationship("ExperimentResultModel", back_populates = "experiment")    
     
 
 class ExperimentResultModel(Base):
