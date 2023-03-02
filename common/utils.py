@@ -8,6 +8,8 @@ from torchmetrics.text.bert import BERTScore
 from torchmetrics import BLEUScore
 from torchmetrics.text.rouge import ROUGEScore
 import nltk
+from datetime import timezone
+import datetime
 
 
 # nltk.download('punkt')
@@ -25,6 +27,16 @@ PROMPT_TEMPLATES = {
 # ToDo: Remove tokens before making the code publicly available.
 HF_TOKEN= "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"
 OAI_API_KEY = "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"
+
+
+def get_utc_time():
+    '''
+    This function returns UTC timestamp
+    '''    
+    dt = datetime.datetime.now(timezone.utc)
+    
+    utc_time = dt.replace(tzinfo=timezone.utc)
+    return utc_time.timestamp()
 
 
 class Summarization():

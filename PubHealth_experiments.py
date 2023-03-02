@@ -4,6 +4,8 @@ from common.utils import *
 import argparse
 import pandas as pd
 from pathlib import Path
+from dict_hash import sha256
+from data.pubhealth.models import *
 
 
 def main():
@@ -44,7 +46,8 @@ def main():
     , default=0.5, type= float)    
 
     # Read arguments from command line
-    args = parser.parse_args()    
+    args = parser.parse_args()
+
     assert args.train_path, "At least enter the train set path!"
 
     # create NLEGeneration object and create zero or few shot prompts
@@ -61,25 +64,34 @@ def main():
     save_path= "data/pubhealth/prompts/"
     result_file_name= f"{save_path}{nle_generator.selected_plm}_{args.prompt_type}_{args.k_per_class}_{args.k_rand_instance}_{instances_no}_{args.seed}.csv"
     
-    # Check whether the file containing the results of the experiment for the selected configuration exists or not.
-    path = Path(result_file_name)    
-    if path.is_file():
-        print("There is a file containing the results of the experiment for the selected configuration!")
-        print("The file name: ",result_file_name)
+    # Check whether the results of the experiment for the selected configuration exists in DB or not.
+    args_dict= vars(args)
+    hashed_args_dict= sha256(args_dict)
+
+    experiments= Experiments()
+    experiment_existence= experiments.select_experiment(hashed_args_dict)
+
+    if experiment_existence:
+        print(f"You have already did experiment(s) with entered arguments.\nEntered arguments values:\n{args_dict} \nRelated file result(s): \n")
+        for result in experiment_existence.results:
+            print(f"{result.file_path}\n")
+        
         print("Do you want to continue?")
         input_command = input('Enter c to continue, any other key to cancel and exit ... ').strip()[0]
         if input_command != "c" and input_command != "C":
             print("The experiment was canceled!")
             return
         
-        print("Write a new name for the result file or press enter key to continue and replace the new result with the existing one.")
+        print("Write a new name for the result file or press enter key to continue with a default name.")
         input_file_name = input().strip()
 
         if len(input_file_name)== 0:
-            print("The new results will be replaced with the existing one!")
+            print("The new results will be saved with a default name!")
+            result_file_name= result_file_name.replace(".csv", f"_{get_utc_time()}.csv")
         else:            
             result_file_name= f"{save_path}{input_file_name}.csv"
-            print(f"new file name is: {result_file_name}")
+        
+        print(f"The new file name is: {result_file_name}")
 
     # Object for summarization the main text of the news
     summarization= None
@@ -89,8 +101,6 @@ def main():
 
     # create the dataset object to read examples
     pubhealth_dataset= PubHealthDataset(train_path= args.train_path, val_path= args.val_path, test_path= args.test_path)
-
-    propmt_result= []
 
     if args.prompt_type == "zero":
         selected_instances= pubhealth_dataset.get_k_rand_instances(k_per_class= args.k_per_class
@@ -102,7 +112,6 @@ def main():
         gpt3_zero_shot_df = pd.DataFrame(selected_instances)
         # save results in a csv file
         gpt3_zero_shot_df.to_csv(result_file_name)
-        propmt_result= selected_instances
     
     elif args.prompt_type == "few":
 
@@ -120,8 +129,17 @@ def main():
         gpt3_few_shot_df = pd.DataFrame(test_instances)
         # save results in a csv file
         gpt3_few_shot_df.to_csv(result_file_name)
-        
-        propmt_result= test_instances
+
+    # Save the result file path into DB
+    if experiment_existence:
+        # Only add new result since the arguments have been already saved
+        experiment_result= ExperimentResultModel(experiment_id= experiment_existence.id,file_path = result_file_name)
+        experiments.insert_result(experiment_result)
+    else:
+        # save all arguments and the result of the experiment
+        experiment_data= ExperimentModel(args= args_dict, args_hash= hashed_args_dict)
+        experiment_data.results= [ExperimentResultModel(file_path = result_file_name)]
+        experiments.insert(experiment_data)
 
     print(f"The experiment Done! the result was saved at {result_file_name}")
 
