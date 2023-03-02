@@ -157,7 +157,7 @@ class Experiments():
         :rtype: object
         '''
 
-        select_result= self.session.query(ExperimentModel).filter(ExperimentModel.args_hash== args_hash)
+        select_result= self.session.query(ExperimentModel).join(ExperimentResultModel).filter(ExperimentModel.args_hash== args_hash)
         
         if any(select_result):
             return select_result[0]
