@@ -43,7 +43,11 @@ def main():
     parser.add_argument("-test_instances_no", "--test_instances_no", help = "The number of test instances"
     , default=20, type= int)
     parser.add_argument("-nle_temperature", "--nle_temperature", help = "To set the randomness of generated explanation."
-    , default=0.5, type= float)    
+    , default=0.5, type= float)
+    parser.add_argument("-add_chatgpt_prompt", "--add_chatgpt_prompt", help = "Add another coloumn to the result file for ChatGPT prompt."
+    , default=True, type= bool)
+    parser.add_argument("-explanation_max_token", "--explanation_max_token", help = "The max number of tokens for generated explanation."
+    , default=300, type= int)    
 
     # Read arguments from command line
     args = parser.parse_args()
@@ -53,7 +57,7 @@ def main():
     # create NLEGeneration object and create zero or few shot prompts
     template= args.prompt_template.split("/")
     nle_generator = NLEGeneration(PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]],
-        max_tokens= 300, temperature= args.nle_temperature)
+        max_tokens= args.explanation_max_token, temperature= args.nle_temperature)
     
     # number of instances to test for few shot
     instances_no= args.test_instances_no
@@ -102,16 +106,13 @@ def main():
     # create the dataset object to read examples
     pubhealth_dataset= PubHealthDataset(train_path= args.train_path, val_path= args.val_path, test_path= args.test_path)
 
+    nle_result= []
     if args.prompt_type == "zero":
         selected_instances= pubhealth_dataset.get_k_rand_instances(k_per_class= args.k_per_class
             , k_rand_instance=args.k_rand_instance, target_set= args.test_target_set
             , random_seed= args.seed, summarization_obj= summarization)
         
-        nle_generator.zero_shot(selected_instances)
-
-        gpt3_zero_shot_df = pd.DataFrame(selected_instances)
-        # save results in a csv file
-        gpt3_zero_shot_df.to_csv(result_file_name)
+        nle_result= nle_generator.zero_shot(selected_instances)
     
     elif args.prompt_type == "few":
 
@@ -124,11 +125,14 @@ def main():
             , random_seed= args.seed, summarization_obj= summarization
             , exclude_claim_ids= pd.DataFrame(demonstration_instances)['claim_id'])
         
-        nle_generator.few_shot(demonstration_instances, test_instances)
+        nle_result= nle_generator.few_shot(demonstration_instances, test_instances)
 
-        gpt3_few_shot_df = pd.DataFrame(test_instances)
-        # save results in a csv file
-        gpt3_few_shot_df.to_csv(result_file_name)
+    if args.add_chatgpt_prompt:
+        add_chatgpt_prompt(nle_result, args.prompt_type)
+
+    # save results in a csv file
+    nle_result_df = pd.DataFrame(nle_result)    
+    nle_result_df.to_csv(result_file_name)
 
     # Save the result file path into DB
     if experiment_existence:

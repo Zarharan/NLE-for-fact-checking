@@ -24,6 +24,11 @@ PROMPT_TEMPLATES = {
     }
 }
 
+CHATGPT_EXTRA_DESC= {
+    "zero": "Can you please explain the veracity of the following claim by considering the context?\n",
+    "few": "The following are some examples of explanations for the veracity of a claim. The context for each claim is provided. Can you please explain the veracity of the last claim by considering its context?\n"
+}
+
 # ToDo: Remove tokens before making the code publicly available.
 HF_TOKEN= "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"
 OAI_API_KEY = "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"
@@ -37,6 +42,25 @@ def get_utc_time():
     
     utc_time = dt.replace(tzinfo=timezone.utc)
     return utc_time.timestamp()
+
+
+def add_chatgpt_prompt(target_instances, prompt_type):
+    '''
+    This function adds another coloumn to the result file for ChatGPT prompt
+    
+    :param target_instances: The input instances to create prompt for them
+    :type target_instances: str
+    :param prompt_type: The type of the prompt which is zero or few
+    :type prompt_type: str
+
+    :returns: The input instance list with ChatGPT prompts added to each instance
+    :rtype: list
+    '''
+
+    for target_instance in target_instances:
+        target_instance['chatgpt_prompt'] = CHATGPT_EXTRA_DESC[prompt_type] + target_instance['prompt']
+            
+    return target_instances
 
 
 class Summarization():
