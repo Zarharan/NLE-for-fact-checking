@@ -147,6 +147,20 @@ class Experiments():
         return experiment_data.id
 
 
+    def insert_result(self, result_data):
+        ''' This function add the result of an experiment to the results table.
+
+        :param result_data: The object that contains results information of the experiment
+        :type result_data: object
+
+        :returns: The ID of the created record
+        :rtype: int
+        '''
+        self.session.add(result_data)
+        self.session.commit()
+        return result_data.id
+
+
     def select_experiment(self, args_hash):
         ''' This function select a record from the experiments table by args_hash.
 
