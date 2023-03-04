@@ -153,9 +153,6 @@ if __name__ == "__main__":
 
     main()
 
-    
-#  A sample of zero shot inference with summarization by using gpt3 and select from test set
-# python PubHealth_experiments.py -summarize bart -k_per_class 1 -k_rand_instance 0 -test_path data/pubhealth/test.tsv
 
 #  A sample of few shot inference with summarization by using gpt3
 # and select four samples (one per class) for demonestration section of the prompt
