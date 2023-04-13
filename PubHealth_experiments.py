@@ -40,12 +40,16 @@ def main():
     , default='explanation/basic', choices=['explanation/basic', 'veracity/basic'])
     parser.add_argument("-prompt_type", "--prompt_type", help = "zero shot or few shot"
     , default='zero', choices=['zero', 'few'])
+    parser.add_argument("-plm", "--plm", help = "gpt3, chat_gpt(gpt-3.5-turbo), or gptj"
+    , default='gpt3', choices=['gpt3','chat_gpt','gptj'])
+    parser.add_argument("-plm_engine", "--plm_engine", help = "For chat completion: gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301. And for completion: text-davinci-003, text-davinci-002, text-curie-001, text-babbage-001, text-ada-001"
+    , default='', choices=['','gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314', 'gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'text-davinci-003', 'text-davinci-002', 'text-curie-001', 'text-babbage-001', 'text-ada-001'])
     parser.add_argument("-test_instances_no", "--test_instances_no", help = "The number of test instances"
     , default=20, type= int)
     parser.add_argument("-nle_temperature", "--nle_temperature", help = "To set the randomness of generated explanation."
     , default=0.5, type= float)
     parser.add_argument("-add_chatgpt_prompt", "--add_chatgpt_prompt", help = "Add another coloumn to the result file for ChatGPT prompt."
-    , default=True, type= bool)
+    , default=False, type= bool)
     parser.add_argument("-explanation_max_token", "--explanation_max_token", help = "The max number of tokens for generated explanation."
     , default=300, type= int)    
 
@@ -57,7 +61,8 @@ def main():
     # create NLEGeneration object and create zero or few shot prompts
     template= args.prompt_template.split("/")
     nle_generator = NLEGeneration(PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]],
-        max_tokens= args.explanation_max_token, temperature= args.nle_temperature)
+        max_tokens= args.explanation_max_token, temperature= args.nle_temperature, plm=args.plm,
+        plm_engine= args.plm_engine)
     
     # number of instances to test for few shot
     instances_no= args.test_instances_no

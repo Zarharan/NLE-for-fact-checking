@@ -21,13 +21,16 @@ class NLEGeneration():
   :vartype plms: list
   '''
 
-  def __init__(self, prompt_template, plm="gpt3", temperature= 0.2, max_tokens= 200):
+  def __init__(self, prompt_template, plm="gpt3", temperature= 0.2, max_tokens= 200, plm_engine= ''):
     self.temperature= temperature
     self.max_tokens= max_tokens
     self.prompt_template= prompt_template
     self.selected_plm= plm
+    self.plm_engine= plm_engine
+
     
     self.plms= {"gpt3": {"api_func": self.__openai_query, "engine": "text-davinci-003"}
+      , "chat_gpt": {"api_func": self.__openai_chat_query, "engine": "gpt-3.5-turbo"}
       , "gptj": {"api_func": self.__hf_models_query, "model_name": "EleutherAI/gpt-j-6B"}}
 
 
@@ -46,6 +49,12 @@ class NLEGeneration():
     for target_instance in target_instances:
       target_instance['prompt'] = self.prompt_template.format(target_instance['summarized_main_text'], target_instance['claim']
         , target_instance['label'], "" if type=="zero" else target_instance['explanation'])
+
+      if self.selected_plm == "chat_gpt" and type=="zero":
+        target_instance['prompt']= [
+                        {"role": "system", "content": "You are a helpful assistant that explains the veracity of a claim by considering the context. Instructions: - Only explain veracity of claims by considering just the related context."},
+                        {"role": "user", "content": target_instance['prompt']}
+                      ]
             
     return target_instances
 
@@ -62,11 +71,31 @@ class NLEGeneration():
     '''
 
     openai.api_key= OAI_API_KEY
-    response = openai.Completion.create(engine= self.plms["gpt3"]["engine"], prompt= prompt
-    , temperature= self.temperature , max_tokens= self.max_tokens, top_p=1, frequency_penalty=0
-    , presence_penalty=0)
+    response = openai.Completion.create(engine= self.plms["gpt3"]["engine"] if self.plm_engine=='' else self.plm_engine
+      , prompt= prompt, temperature= self.temperature , max_tokens= self.max_tokens
+      , top_p=1, frequency_penalty=0
+      , presence_penalty=0)
     
     return response.choices[0].text
+
+
+  @backoff.on_exception(backoff.expo, RateLimitError)
+  def __openai_chat_query(self, prompt):
+    ''' This function send a query to open ai for using ChatGPT.
+
+    :param prompt: The target prompt
+    :type prompt: str
+
+    :returns: The generated message
+    :rtype: str
+    '''
+
+    openai.api_key= OAI_API_KEY
+    response = openai.ChatCompletion.create(model= self.plms["chat_gpt"]["engine"] if self.plm_engine=='' else self.plm_engine
+    , messages= prompt, temperature= self.temperature , max_tokens= self.max_tokens, top_p=1
+    , frequency_penalty=0, presence_penalty=0)
+    
+    return response.choices[0].message
 
 
   def __hf_models_query(self, prompt):
@@ -105,6 +134,21 @@ class NLEGeneration():
     :rtype: list
     '''
     
+    if self.selected_plm == "chat_gpt":
+      # create demonestration section for Chat Completions
+      demonstration_lst= [{"role": "system", "content": "You are a helpful assistant that explains the veracity of a claim by considering the context. Instructions: - Only explain veracity of claims by considering just the related context. - Use provided examples to learn more about explanation."}]
+      for item in demonstration_instances:
+        demonstration_lst.append({"role": "user", "content": self.prompt_template.format(item['summarized_main_text'], item['claim']
+        , item['label'], "")})
+        demonstration_lst.append({"role": "assistant", "content": item['explanation']})
+      
+      # create message with few shot section for Chat Completions
+      for item in test_instances:
+        item["prompt"]= demonstration_lst + [{"role": "user", "content": self.prompt_template.format(item['summarized_main_text'], item['claim']
+        , item['label'], "")}]
+      
+      return test_instances
+
     # Create the demonstration section of the prompt
     self.__prompt(demonstration_instances, type="few")
     demonstration_str= ""
