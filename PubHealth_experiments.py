@@ -17,10 +17,16 @@ def main():
     , default='data/pubhealth/train.tsv', type= str)
     parser.add_argument("-val_path", "--val_path", help = "The tsv file path of the validation set")
     parser.add_argument("-test_path", "--test_path", help = "The tsv file path of the test set")
-    parser.add_argument("-k_per_class", "--k_per_class", help = "The number of samples per class for demonstration"
+    parser.add_argument("-k_per_class", "--k_per_class", help = "The number of samples per class for test section"
+    , default=4, type= int)
+    parser.add_argument("-k_rand_instance", "--k_rand_instance", help = "The number of random samples regardless of class for test section"
+    , default=4, type= int)
+
+    parser.add_argument("-demon_k_per_class", "--demon_k_per_class", help = "The number of samples per class for demonstration section"
     , default=0, type= int)
-    parser.add_argument("-k_rand_instance", "--k_rand_instance", help = "The number of random samples regardless of class for demonstration"
+    parser.add_argument("-demon_k_rand_instance", "--demon_k_rand_instance", help = "The number of random samples regardless of class for demonstration section"
     , default=1, type= int)
+
     parser.add_argument("-demon_target_set", "--demon_target_set"
     , help = "The target set to select the demonstration instances from"
     , default='train', choices=['train', 'val', 'test'])
@@ -44,8 +50,6 @@ def main():
     , default='gpt3', choices=['gpt3','chat_gpt','gptj'])
     parser.add_argument("-plm_engine", "--plm_engine", help = "For chat completion: gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301. And for completion: text-davinci-003, text-davinci-002, text-curie-001, text-babbage-001, text-ada-001"
     , default='', choices=['','gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314', 'gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'text-davinci-003', 'text-davinci-002', 'text-curie-001', 'text-babbage-001', 'text-ada-001'])
-    parser.add_argument("-test_instances_no", "--test_instances_no", help = "The number of test instances"
-    , default=20, type= int)
     parser.add_argument("-nle_temperature", "--nle_temperature", help = "To set the randomness of generated explanation."
     , default=0.5, type= float)
     parser.add_argument("-add_chatgpt_prompt", "--add_chatgpt_prompt", help = "Add another coloumn to the result file for ChatGPT prompt."
@@ -64,14 +68,13 @@ def main():
         max_tokens= args.explanation_max_token, temperature= args.nle_temperature, plm=args.plm,
         plm_engine= args.plm_engine)
     
-    # number of instances to test for few shot
-    instances_no= args.test_instances_no
-    if args.prompt_type == "zero": # number of instances to test for zero shot
-        instances_no = 4 * args.k_per_class + args.k_rand_instance
-    
+    # number of instances to test. 4 is number of labels in this task.
+    instances_no = 4 * args.k_per_class + args.k_rand_instance   
+    k_rand_instance_no= args.k_rand_instance if args.prompt_type=="zero" else args.demon_k_rand_instance
+    k_per_class_no= args.k_per_class if args.prompt_type=="zero" else args.demon_k_per_class
     # File name to save the results of the experiment for the selected configuration
     save_path= "data/pubhealth/prompts/"
-    result_file_name= f"{save_path}{nle_generator.selected_plm}_{args.prompt_type}_{args.k_per_class}_{args.k_rand_instance}_{instances_no}_{args.seed}.csv"
+    result_file_name= f"{save_path}{nle_generator.selected_plm}_{args.prompt_type}_{k_per_class_no}_{k_rand_instance_no}_{instances_no}_{args.seed}.csv"
     
     # Check whether the results of the experiment for the selected configuration exists in DB or not.
     args_dict= vars(args)
@@ -121,12 +124,12 @@ def main():
     
     elif args.prompt_type == "few":
 
-        demonstration_instances= pubhealth_dataset.get_k_rand_instances(k_per_class= args.k_per_class
-            , k_rand_instance=args.k_rand_instance, target_set= args.demon_target_set
+        demonstration_instances= pubhealth_dataset.get_k_rand_instances(k_per_class= args.demon_k_per_class
+            , k_rand_instance=args.demon_k_rand_instance, target_set= args.demon_target_set
             , random_seed= args.seed, summarization_obj= summarization)
 
-        test_instances= pubhealth_dataset.get_k_rand_instances(k_per_class= 0
-            , k_rand_instance=args.test_instances_no, target_set= args.test_target_set
+        test_instances= pubhealth_dataset.get_k_rand_instances(k_per_class= args.k_per_class
+            , k_rand_instance=args.k_rand_instance, target_set= args.test_target_set
             , random_seed= args.seed, summarization_obj= summarization
             , exclude_claim_ids= pd.DataFrame(demonstration_instances)['claim_id'])
         
@@ -161,4 +164,4 @@ if __name__ == "__main__":
 
 #  A sample of few shot inference with summarization by using gpt3
 # and select four samples (one per class) for demonestration section of the prompt
-# python PubHealth_experiments.py -k_per_class 1 -k_rand_instance 0 -test_path data/pubhealth/test.tsv -summarize bart -prompt_type few -summarization_max_token 300
+# python PubHealth_experiments.py -demon_k_per_class 1 -demon_k_rand_instance 0 -k_per_class 4 -k_rand_instance 4 -test_path data/pubhealth/test.tsv -summarize bart -prompt_type few -summarization_max_token 300
