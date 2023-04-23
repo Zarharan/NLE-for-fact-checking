@@ -95,7 +95,7 @@ class NLEGeneration():
     , messages= prompt, temperature= self.temperature , max_tokens= self.max_tokens, top_p=1
     , frequency_penalty=0, presence_penalty=0)
     
-    return response.choices[0].message
+    return response.choices[0].message.content
 
 
   def __hf_models_query(self, prompt):
