@@ -16,11 +16,15 @@ import datetime
 PROMPT_TEMPLATES = {
     "PubHealth": {
         "veracity" : {
-            "basic": ("Context: {}\nClaim: {}\nclaim is {}\n")
+            "basic": ("Context: {}\nClaim: {}\nWhich of True, False, Mixture, and Unproven can be the label of the claim by considering the context? {}\n")
         },
         "explanation": {
             "basic": ("Context: {}\nClaim: {}\nclaim is {}\nWhy? {}\n")
-            }
+        },
+        "joint":{
+            "basic": ("Context: {}\nClaim: {}\n Which of True, False, Mixture, and Unproven can be the label of the claim by considering the context? {}\nWhy? {}\n")
+        }
+
     }
 }
 

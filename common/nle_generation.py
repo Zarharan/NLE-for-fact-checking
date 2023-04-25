@@ -52,7 +52,7 @@ class NLEGeneration():
 
       if self.selected_plm == "chat_gpt" and type=="zero":
         target_instance['prompt']= [
-                        {"role": "system", "content": "You are a helpful assistant that explains the veracity of a claim by considering the context. Instructions: - Only explain veracity of claims by considering just the related context."},
+                        {"role": "system", "content": "You are a helpful assistant that explains the veracity of a claim by considering the context. Instructions: - Only explain the veracity of claims by considering just the related context."},
                         {"role": "user", "content": target_instance['prompt']}
                       ]
             
@@ -136,7 +136,7 @@ class NLEGeneration():
     
     if self.selected_plm == "chat_gpt":
       # create demonestration section for Chat Completions
-      demonstration_lst= [{"role": "system", "content": "You are a helpful assistant that explains the veracity of a claim by considering the context. Instructions: - Only explain veracity of claims by considering just the related context. - Use provided examples to learn more about explanation."}]
+      demonstration_lst= [{"role": "system", "content": "You are a helpful assistant that explains the veracity of a claim by considering the context. Instructions: - Only explain veracity of claims by considering just the related context. - Use the provided examples to learn more about explanation."}]
       for item in demonstration_instances:
         demonstration_lst.append({"role": "user", "content": self.prompt_template.format(item['summarized_main_text'], item['claim']
         , item['label'], "")})
