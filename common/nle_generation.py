@@ -8,8 +8,8 @@ class NLEGeneration():
   '''
   By using NLEGeneration object we can generate explanation.
   
-  :param prompt_template: The target template to create the prompt
-  :type prompt_template: str
+  :param prompt_key: The key for the target template to create the prompt
+  :type prompt_key: str
   :param temperature: To set the randomness of generated text (between 0 and 1, with 0 being the most predictable and 1 being the most random)
   :type temperature: float
   :param max_tokens: The maximum number of tokens for generated text
@@ -19,12 +19,17 @@ class NLEGeneration():
 
   :ivar plms: List of possible pre-trained language models to select
   :vartype plms: list
+  :ivar prompt_template: The target template to create the prompt
+  :vartype prompt_template: str
+
   '''
 
-  def __init__(self, prompt_template, plm="gpt3", temperature= 0.2, max_tokens= 200, plm_engine= ''):
+  def __init__(self, prompt_key, plm="gpt3", temperature= 0.2, max_tokens= 200, plm_engine= ''):
     self.temperature= temperature
     self.max_tokens= max_tokens
-    self.prompt_template= prompt_template
+    self.prompt_key= prompt_key
+    template= prompt_key.split("/")
+    self.prompt_template= PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]]
     self.selected_plm= plm
     self.plm_engine= plm_engine
 
@@ -48,7 +53,8 @@ class NLEGeneration():
 
     for target_instance in target_instances:
       target_instance['prompt'] = self.prompt_template.format(target_instance['summarized_main_text'], target_instance['claim']
-        , target_instance['label'], "" if type=="zero" else target_instance['explanation'])
+        , "" if type=="zero" and any(item in self.prompt_key for item in ["veracity", "joint"]) else target_instance['label']
+        , "" if type=="zero" or "veracity" in self.prompt_key else target_instance['explanation'])
 
       if self.selected_plm == "chat_gpt" and type=="zero":
         target_instance['prompt']= [

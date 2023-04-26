@@ -16,13 +16,16 @@ import datetime
 PROMPT_TEMPLATES = {
     "PubHealth": {
         "veracity" : {
-            "basic": ("Context: {}\nClaim: {}\nWhich of True, False, Mixture, and Unproven can be the label of the claim by considering the context? {}\n")
+            "basic": ("Context: {}\nClaim: {}\nWhich of True, False, Mixture, and Unproven can be the label of the claim by considering the context? {}\n"),
+            "natural": ("Context: {}\nClaim: {}\nTaking into consideration the context of the claim, label the claim as either True, False, Mixture or Unproven. {}\n")
         },
         "explanation": {
-            "basic": ("Context: {}\nClaim: {}\nclaim is {}\nWhy? {}\n")
+            "basic": ("Context: {}\nClaim: {}\nclaim is {}\nWhy? {}\n"),
+            "natural": ("Context: {}\nClaim: {}\nclaim is {}\nExplain the veracity of the claim by considering just the related context. {}\n")
         },
         "joint":{
-            "basic": ("Context: {}\nClaim: {}\n Which of True, False, Mixture, and Unproven can be the label of the claim by considering the context? {}\nWhy? {}\n")
+            "basic": ("Context: {}\nClaim: {}\n Which of True, False, Mixture, and Unproven can be the label of the claim by considering the context? {}\nWhy? {}\n"),
+            "natural": ("Context: {}\nClaim: {}\n Predict the veracity of the claim and explain your reasoning by considering just the related context. Assign one of True, False, Mixture, or Unproven as the veracity label of the claim.\n {} \n{}")
         }
 
     }

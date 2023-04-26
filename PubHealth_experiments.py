@@ -43,7 +43,7 @@ def main():
     parser.add_argument("-seed", "--seed", help = "seed for random function. Pass None for select different instances randomly."
     , default=313, type= int)
     parser.add_argument("-prompt_template", "--prompt_template", help = "The target template to create prompt"
-    , default='explanation/basic', choices=['explanation/basic', 'veracity/basic'])
+    , default='explanation/basic', choices=['explanation/basic', 'veracity/basic', 'explanation/natural', 'veracity/natural', 'joint/basic', 'joint/natural'])
     parser.add_argument("-prompt_type", "--prompt_type", help = "zero shot or few shot"
     , default='zero', choices=['zero', 'few'])
     parser.add_argument("-plm", "--plm", help = "gpt3, chat_gpt(gpt-3.5-turbo), or gptj"
@@ -63,10 +63,9 @@ def main():
     assert args.train_path, "At least enter the train set path!"
 
     # create NLEGeneration object and create zero or few shot prompts
-    template= args.prompt_template.split("/")
-    nle_generator = NLEGeneration(PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]],
-        max_tokens= args.explanation_max_token, temperature= args.nle_temperature, plm=args.plm,
-        plm_engine= args.plm_engine)
+    
+    nle_generator = NLEGeneration(max_tokens= args.explanation_max_token, prompt_key=args.prompt_template
+        , temperature= args.nle_temperature, plm=args.plm,plm_engine= args.plm_engine)
     
     # number of instances to test. 4 is number of labels in this task.
     instances_no = 4 * args.k_per_class + args.k_rand_instance   
