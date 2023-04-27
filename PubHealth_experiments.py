@@ -72,7 +72,7 @@ def main():
     k_rand_instance_no= args.k_rand_instance if args.prompt_type=="zero" else args.demon_k_rand_instance
     k_per_class_no= args.k_per_class if args.prompt_type=="zero" else args.demon_k_per_class
     # File name to save the results of the experiment for the selected configuration
-    save_path= "data/pubhealth/prompts/"
+    save_path= "data/pubhealth/prompts/" + args.prompt_template + "/"
     result_file_name= f"{save_path}{nle_generator.selected_plm}_{args.prompt_type}_{k_per_class_no}_{k_rand_instance_no}_{instances_no}_{args.seed}.csv"
     
     # Check whether the results of the experiment for the selected configuration exists in DB or not.
@@ -138,6 +138,8 @@ def main():
         add_chatgpt_prompt(nle_result, args.prompt_type)
 
     # save results in a csv file
+    Path(save_path).mkdir(parents=True, exist_ok=True)
+
     nle_result_df = pd.DataFrame(nle_result)    
     nle_result_df.to_csv(result_file_name)
 
