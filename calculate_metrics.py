@@ -3,9 +3,31 @@ import argparse
 import pandas as pd
 from pathlib import Path
 import glob
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 
 
-def report_metrics(file_path, pred_col_title, target_col_title, metrics_obj):
+def get_pred_target_colms(file_path, pred_col_title, target_col_title):
+    ''' This function read a file and returns the prediction column and ground truth column content.
+
+    :param file_path: The path to the file to report metrics for it
+    :type file_path: str
+    :param pred_col_title: The title of the prediction column to report metrics for it
+    :type pred_col_title: str
+    :param target_col_title: The title of target (ground truth) column to report metrics regarding it
+    :type target_col_title: str
+
+    :returns: The prediction list and ground truth list
+    :rtype: tuple
+    '''
+
+    path = Path(file_path)
+    assert path.is_file(), f"Please enter a correct path to a csv file."
+    target_file_df= pd.read_csv(file_path)
+
+    return target_file_df[pred_col_title].tolist(), target_file_df[target_col_title].tolist()
+
+
+def report_nle_metrics(file_path, pred_col_title, target_col_title, metrics_obj):
     ''' This function read a file and report evaluation metrics for the generated explanation in the file.
 
     :param file_path: The path to the file to report metrics for it
@@ -20,21 +42,40 @@ def report_metrics(file_path, pred_col_title, target_col_title, metrics_obj):
     :returns: The calculated metrics
     :rtype: dict
     '''
-
-    path = Path(file_path)
-    assert path.is_file(), f"Please enter a correct path to a csv file."
-    target_file_df= pd.read_csv(file_path)
     
-    metrics_obj.pred_list = target_file_df[pred_col_title].tolist()
-    metrics_obj.target_list = target_file_df[target_col_title].tolist()
-
-    print("-"*50)
-    print(f"Calculating metrics for {file_path}:")
+    metrics_obj.pred_list, metrics_obj.target_list = get_pred_target_colms(file_path, pred_col_title, target_col_title)
 
     all_metrics= metrics_obj.get_all_metrics()
     print(all_metrics)
     
     return all_metrics
+
+
+def report_veracity_metrics(file_path, pred_col_title, target_col_title):
+    ''' This function read a file and report evaluation metrics for veracity classification task.
+
+    :param file_path: The path to the file to report metrics for it
+    :type file_path: str
+    :param pred_col_title: The title of the prediction column to report metrics for it
+    :type pred_col_title: str
+    :param target_col_title: The title of target (ground truth) column to report metrics regarding it
+    :type target_col_title: str
+    
+    :returns: The calculated metrics
+    :rtype: dict
+    '''
+
+    pred_list, target_list = get_pred_target_colms(file_path, pred_col_title, target_col_title)
+    pred_list= [label.lower() for label in pred_list]
+    labels=['true', 'false', 'mixture', 'unproven']
+
+    metrics_result= {"acc": accuracy_score(pred_list, target_list)
+        , "pre": precision_score(pred_list, target_list, average='weighted', labels=labels)
+        , "rec": recall_score(pred_list, target_list, average='weighted', labels=labels)
+        , "f1": f1_score(pred_list, target_list, average='weighted', labels=labels)
+        , "confmat": confusion_matrix(pred_list, target_list, labels=labels)}
+
+    return metrics_result
 
 
 def main():
@@ -54,22 +95,34 @@ def main():
     parser.add_argument("-bertscore_model", "--bertscore_model"
         , help = " A name or a model path used to load transformers pretrained model to calculate the Bert score"
         , default="microsoft/deberta-xlarge-mnli"
-        , type= str)        
+        , type= str)
+    parser.add_argument("-task_type", "--task_type"
+        , help = "Report metrics for the veracity prediction, the explanation generation or the joint model", default="explanation"
+        , choices=['explanation', 'veracity', 'joint'], type= str)        
 
     # Read arguments from command line
-    args = parser.parse_args()    
+    args = parser.parse_args()
     
     nle_metrics= NLEMetrics(bertscore_model= args.bertscore_model)
 
-    if args.type == "file":
-        report_metrics(args.target_path, args.pred_col_title, args.target_col_title, nle_metrics)
-    else:
+    files = []
 
+    if args.type == "file":
+        files.append(args.target_path)
+    else:
         # csv files in the path
         files = glob.glob(args.target_path + "/*.csv")
 
-        for file_name in files:            
-            report_metrics(file_name, args.pred_col_title, args.target_col_title, nle_metrics)
+    for file_name in files:
+        print("-"*50)
+        print(f"Calculating metrics for {file_name}:")
+
+        if args.task_type=="veracity":
+            print(report_veracity_metrics(file_name, args.pred_col_title, args.target_col_title))
+        elif args.task_type=="explanation":
+            report_nle_metrics(file_name, args.pred_col_title, args.target_col_title, nle_metrics)
+        else: # joint task
+            pass
         
 
 if __name__ == "__main__":
