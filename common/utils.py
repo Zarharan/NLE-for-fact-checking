@@ -10,6 +10,7 @@ from torchmetrics.text.rouge import ROUGEScore
 import nltk
 from datetime import timezone
 import datetime
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 
 # nltk.download('punkt')
@@ -38,7 +39,7 @@ CHATGPT_EXTRA_DESC= {
 
 # ToDo: Remove tokens before making the code publicly available.
 HF_TOKEN= "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"
-OAI_API_KEY = "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"
+OAI_API_KEY = "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"
 
 
 def get_utc_time():
@@ -80,12 +81,18 @@ class Summarization():
     :type temperature: float
     :param model_name: The target model to generate summary
     :type model_name: string
+    :param model_path: The path of weights of the target model to generate summary (except GPT-3 model)
+    :type model_path: string        
     '''
-    def __init__(self, max_tokens= 300, temperature= 0.5, model_name= "bart"):
+    def __init__(self, max_tokens= 300, temperature= 0.5, model_name= "bart"
+        , model_path="data/models/bart"):
+
         self.max_tokens= max_tokens
         self.temperature= temperature
         self.model_name= model_name
-        
+        self.model_path= model_path
+        self._summarizer= None
+        self._summarizer_tokenizer= None
         self.text_summary = TextSummary()
 
     
@@ -111,14 +118,14 @@ class Summarization():
         # 1 token ~= ¾ words. 100 tokens ~= 75 words (Regarding OpenAI documentation)
         # check the max tokens of the text and truncate if exceed
         main_text_words= text_for_summary.split()
-        tolerance_no= 250
+        tolerance_no= 500
         exceed_no= 4096 - (len(main_text_words) * (4/3) + self.max_tokens + tolerance_no)
         if exceed_no<0:
             text_for_summary= " ".join(main_text_words[:math.floor(exceed_no)])
 
         summary = ""
         if self.model_name== "bart":
-            summary= self.__bart_large_cnn(text_for_summary)
+            summary= self.__bart_large_cnn(text_for_summary, int(exceed_no))
         elif self.model_name == "gpt3":
             summary= self.__gpt3(text_for_summary)
 
@@ -148,27 +155,28 @@ class Summarization():
         return response.choices[0].text
 
 
-    def __bart_large_cnn(self, text_for_summary):
+    def __bart_large_cnn(self, text_for_summary, max_length):
         ''' This function gets a text and summarizes it by generating at most max_tokens by using bart-large-cnn-samsum from HiggingFace.
 
         :param text_for_summary: The input text 
         :type text_for_summary: str
+        :param max_length: The max token counts for the input text 
+        :type max_length: int
 
         :returns: The generated summary
         :rtype: str
-        '''
+        '''      
+        
+        if self._summarizer is None or self._summarizer_tokenizer is None: 
+            # only load for first use
+            self._summarizer_tokenizer = AutoTokenizer.from_pretrained(self.model_path)
+            self._summarizer = AutoModelForSeq2SeqLM.from_pretrained(self.model_path)
+            print("Bart model was loaded successfully.")
 
-        API_URL = "https://api-inference.huggingface.co/models/philschmid/bart-large-cnn-samsum"
-        headers = {"Authorization": "Bearer " + HF_TOKEN}
-
-        payload= {
-            "inputs": text_for_summary,
-            "truncation":True,
-            "max_length": self.max_tokens,
-            "temperature": self.temperature
-        }
-        response = requests.post(API_URL, headers=headers, json=payload)
-        return response.json()[0]["summary_text"]
+        inputs = self._summarizer_tokenizer([text_for_summary], max_length=max_length
+        , truncation=True, return_tensors="pt")
+        summary_ids = self._summarizer.generate(inputs["input_ids"], num_beams=2, min_length=0, max_length=self.max_tokens)
+        return self._summarizer_tokenizer.batch_decode(summary_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 
 
 class NLEMetrics():

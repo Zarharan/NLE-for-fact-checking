@@ -35,7 +35,7 @@ class Preprocessor():
         u"\u3030"
         "]+", flags=re.UNICODE)
 
-    self.pattern_list = ["\\u200c|\\u200d|\\u200e|\\u200b|\\u2067|\\u2069"]
+    self.pattern_list = ["\\u200c|\\u200d|\\u200e|\\u200b|\\u2067|\\u2069|\\u016b|\\u03b2|\\u2033"]
 
 
   def clean_text(self, text):

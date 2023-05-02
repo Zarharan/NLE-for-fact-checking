@@ -36,6 +36,9 @@ def main():
     parser.add_argument("-summarize", "--summarize"
     , help = "Whether summarize the main text of the news or not"
     , default='false', choices=['false', 'gpt3', 'bart'])
+    parser.add_argument("-summarization_model_path", "--summarization_model_path"
+    , help = "The path of weights of the target model to generate summary (except GPT-3 model)"
+    , default='data/models/bart', type=str)
     parser.add_argument("-summarization_max_token", "--summarization_max_token", help = "The max number of tokens for generated summary."
     , default=200, type= int)
     parser.add_argument("-summarization_temperature", "--summarization_temperature", help = "To set the randomness of generated summary."
@@ -108,7 +111,8 @@ def main():
     summarization= None
     if args.summarize != "false":
         summarization= Summarization(max_tokens= args.summarization_max_token
-        , temperature= args.summarization_temperature, model_name= args.summarize)
+        , temperature= args.summarization_temperature, model_name= args.summarize
+        , model_path= args.summarization_model_path)
 
     # create the dataset object to read examples
     pubhealth_dataset= PubHealthDataset(train_path= args.train_path, val_path= args.val_path, test_path= args.test_path)
