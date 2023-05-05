@@ -30,8 +30,8 @@ def save_lsg_bart(model_name, save_path):
 
     :returns: None
     '''    
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModel.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name, trust_remote_code=True)
 
     tokenizer.save_pretrained(save_path)
     model.save_pretrained(save_path)

@@ -126,6 +126,8 @@ class Summarization():
         summary = ""
         if self.model_name== "bart":
             summary= self.__bart_large_cnn(text_for_summary, int(exceed_no))
+        elif self.model_name== "lsg_bart":
+            summary= self.__lsg_bart_large(text_for_summary)
         elif self.model_name == "gpt3":
             summary= self.__gpt3(text_for_summary)
 
@@ -176,6 +178,27 @@ class Summarization():
         inputs = self._summarizer_tokenizer([text_for_summary], max_length=max_length
         , truncation=True, return_tensors="pt")
         summary_ids = self._summarizer.generate(inputs["input_ids"], num_beams=2, min_length=0, max_length=self.max_tokens)
+        return self._summarizer_tokenizer.batch_decode(summary_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+
+
+    def __lsg_bart_large(self, text_for_summary):
+        ''' This function gets a text and summarizes it by generating at most max_tokens by using ccdv/lsg-bart-base-4096-multinews from HiggingFace.
+
+        :param text_for_summary: The input text 
+        :type text_for_summary: str
+
+        :returns: The generated summary
+        :rtype: str
+        '''      
+
+        if self._summarizer is None or self._summarizer_tokenizer is None: 
+            # only load for first use
+            self._summarizer_tokenizer = AutoTokenizer.from_pretrained(self.model_path, trust_remote_code=True)
+            self._summarizer = AutoModelForSeq2SeqLM.from_pretrained(self.model_path, trust_remote_code=True)
+            print("LSG Bart model was loaded successfully.")
+
+        inputs = self._summarizer_tokenizer([text_for_summary], return_tensors="pt")
+        summary_ids = self._summarizer.generate(inputs["input_ids"], num_beams=2, max_length=self.max_tokens)
         return self._summarizer_tokenizer.batch_decode(summary_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 
 
