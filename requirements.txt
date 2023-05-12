@@ -14,4 +14,5 @@ transformers==4.26.1
 dict_hash==1.1.29
 scikit-learn==1.2.2
 nltk==3.8.1
+spacy
 openai
