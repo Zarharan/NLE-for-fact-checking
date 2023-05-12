@@ -13,6 +13,8 @@ import datetime
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForSequenceClassification
 import spacy
 import numpy as np
+from common.nli_structure import *
+import torch
 
 
 # nltk.download('punkt')
@@ -362,6 +364,10 @@ class NLI(NLIStructure):
     :type model_name: str
     :param model_path: The path of selected model to load
     :type model_path: str
+    :param _nli_tokenizer: The loaded tokenizer to prevent loading several times
+    :type _nli_tokenizer: object
+    :param _nli_model: The loaded NLI model to prevent loading several times
+    :type _nli_model: object    
 
     :ivar _model_func_mapping: The mapping between selected model name and related implemented function
     :vartype _model_func_mapping: dict
@@ -372,6 +378,9 @@ class NLI(NLIStructure):
         assert model_name in self._model_func_mapping.keys(), f"Please select one of {self._model_func_mapping.keys()} as target NLI model or add a new model name and related implementation."
         self.model_name= model_name
         self.model_path= model_path
+
+        self._nli_tokenizer= None
+        self._nli_model= None
 
 
     def predict_nli(self, premise, hypothesis):
@@ -386,7 +395,7 @@ class NLI(NLIStructure):
         :rtype: int
         '''
         
-        return self.model_func_mapping[self.model_name](premise, hypothesis)
+        return self._model_func_mapping[self.model_name](premise, hypothesis)
 
 
     def __roberta_large_snli(self, premise, hypothesis):
@@ -408,6 +417,6 @@ class NLI(NLIStructure):
 
         input_ids= self._nli_tokenizer.encode_plus(premise, hypothesis, max_length=200
         , truncation=True, return_tensors="pt")
-        outputs = model(**input_ids)
+        outputs = self._nli_model(**input_ids)
 
         return np.argmax(torch.softmax(outputs[0], dim=1)[0].tolist())
