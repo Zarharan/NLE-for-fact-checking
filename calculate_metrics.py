@@ -6,17 +6,15 @@ import glob
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 
 
-def get_pred_target_colms(file_path, pred_col_title, target_col_title):
-    ''' This function read a file and returns the prediction column and ground truth column content.
+def get_pred_target_colms(file_path, *args):
+    ''' This function read a file and returns the content of the selected columns in args.
 
     :param file_path: The path to the file to report metrics for it
     :type file_path: str
-    :param pred_col_title: The title of the prediction column to report metrics for it
-    :type pred_col_title: str
-    :param target_col_title: The title of target (ground truth) column to report metrics regarding it
-    :type target_col_title: str
+    :param *args: The title of target columns to get their contents as a list
+    :type *args: str
 
-    :returns: The prediction list and ground truth list
+    :returns: The content of selected columns
     :rtype: tuple
     '''
 
@@ -24,7 +22,10 @@ def get_pred_target_colms(file_path, pred_col_title, target_col_title):
     assert path.is_file(), f"Please enter a correct path to a csv file."
     target_file_df= pd.read_csv(file_path)
 
-    return target_file_df[pred_col_title].tolist(), target_file_df[target_col_title].tolist()
+    for arg in args:
+        lst_result.append(target_file_df[arg].tolist())
+
+    return tuple(lst_result)
 
 
 def report_nle_metrics(file_path, pred_col_title, target_col_title, metrics_obj):
@@ -43,7 +44,7 @@ def report_nle_metrics(file_path, pred_col_title, target_col_title, metrics_obj)
     :rtype: dict
     '''
     
-    metrics_obj.pred_list, metrics_obj.target_list = get_pred_target_colms(file_path, pred_col_title, target_col_title)
+    metrics_obj.pred_list, metrics_obj.target_list, metrics_obj.claim_list = get_pred_target_colms(file_path, pred_col_title, target_col_title, "claim")
 
     all_metrics= metrics_obj.get_all_metrics()
     print(all_metrics)
@@ -98,12 +99,19 @@ def main():
         , type= str)
     parser.add_argument("-task_type", "--task_type"
         , help = "Report metrics for the veracity prediction, the explanation generation or the joint model", default="explanation"
-        , choices=['explanation', 'veracity', 'joint'], type= str)        
+        , choices=['explanation', 'veracity', 'joint'], type= str)
+    parser.add_argument("-nli_model_name", "--nli_model_name"
+        , help = " A model name to calculate the SGC and WGC scores", default="roberta_large_snli"
+        , choices=['roberta_large_snli'], type= str)
+    parser.add_argument("-nli_model_path", "--nli_model_path"
+        , help = " The path of selected model to calculate the SGC and WGC scores"
+        , default="data/models/roberta_large_snli", type= str)
 
     # Read arguments from command line
     args = parser.parse_args()
     
     nle_metrics= NLEMetrics(bertscore_model= args.bertscore_model)
+    nle_metrics.nli_model= NLI(args.nli_model_name, args.nli_model_path)
 
     files = []
 

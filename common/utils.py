@@ -10,7 +10,9 @@ from torchmetrics.text.rouge import ROUGEScore
 import nltk
 from datetime import timezone
 import datetime
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForSequenceClassification
+import spacy
+import numpy as np
 
 
 # nltk.download('punkt')
@@ -35,6 +37,12 @@ PROMPT_TEMPLATES = {
 CHATGPT_EXTRA_DESC= {
     "zero": "Can you please explain the veracity of the following claim by considering the context?\n",
     "few": "The following are some examples of explanations for the veracity of a claim. The context for each claim is provided. Can you please explain the veracity of the last claim by considering its context?\n"
+}
+
+NLI_LABEL_ID= {
+    "entailment": 0,
+    "neutral": 1,
+    "contradiction": 2
 }
 
 # ToDo: Remove tokens before making the code publicly available.
@@ -69,6 +77,24 @@ def add_chatgpt_prompt(target_instances, prompt_type):
         target_instance['chatgpt_prompt'] = CHATGPT_EXTRA_DESC[prompt_type] + target_instance['prompt']
             
     return target_instances
+
+
+def sent_tokenize(input_text):    
+    '''
+    This function returns the list of sentences in the input text
+
+    :param input_text: The input text
+    :type input_text: str
+
+    :returns: The list of sentences in the input text
+    :rtype: list
+    '''
+
+    nlp= spacy.load("en_core_web_sm")
+    doc= nlp(input_text)
+
+    lst_sent= [x.text for x in doc.sents]
+    return lst_sent
 
 
 class Summarization():
@@ -221,11 +247,14 @@ class NLEMetrics():
     :vartype bleu: object        
     '''
     def __init__(self, pred_list = None, target_list= None
-        , bertscore_model= "microsoft/deberta-xlarge-mnli"):
+        , bertscore_model= "microsoft/deberta-xlarge-mnli", claim_list= [], nli_model= None):
         
         self.pred_list= pred_list
         self.target_list= target_list
         self.bertscore_model= bertscore_model
+        self.claim_list= claim_list
+        self.nli_model= nli_model
+
         self.rouge= None
         self.bertscore= None
         self.bleu= None
@@ -280,6 +309,40 @@ class NLEMetrics():
         return rounded_score
 
 
+    def __check_coherence_inputs(func):
+        '''
+        This is a decorator to check the required inputs of coherence functions.
+        '''
+        def wrapper(self, *args, **kwargs):
+
+            assert len(self.claim_list) > 0, "Please set the related claim list to the predicted/generated list"
+            assert self.nli_model is not None, "Please set the NLI object for inference"
+
+            func_result = func(self, *args, **kwargs)
+            return func_result
+
+        return wrapper
+
+
+    @__check_coherence_inputs
+    def SGC(self):
+        ''' This function calculates the strong global coherence metric by following the definition of the "Explainable Automated Fact-Checking for Public Health Claims" paper.
+        The definition: Every sentence in the generated explanation text must entail the claim.
+
+        :returns: The percentage of instances that satisfy this metric.
+        :rtype: float
+        '''        
+        failed_no= 0
+        for claim, pred in zip(self.claim_list, self.pred_list):
+            pred_sents_list= sent_tokenize(pred)
+            for sent in pred_sents_list:
+                if self.nli_model.predict_nli(claim, sent) != NLI_LABEL_ID["entailment"]:
+                    failed_no+= 1
+                    break
+        
+        return 1-(failed_no/len(self.claim_list))
+
+
     def get_all_metrics(self):
         ''' This function calculate all scores to evaluate the pred_list regarding the target_list.
 
@@ -287,9 +350,64 @@ class NLEMetrics():
         :rtype: dict
         '''
 
-        bert_result= self.bert_score()
-        bert_avg= {f"{key}": round(sum(bert_result[key])/len(bert_result[key]), 4) for key in bert_result.keys()}
+        return {"rouge": self.rouge_score(), "SGC": self.SGC(), "bleu": self.bleu_score()}
+        
+        
 
-        return {"rouge": self.rouge_score(), "bert": bert_avg, "bleu": self.bleu_score()}
+class NLI(NLIStructure):
+    '''
+    The NLI object is responsible for obtaining NLI labelof an instance.
+
+    :param model_name: The model name to predict NLI label
+    :type model_name: str
+    :param model_path: The path of selected model to load
+    :type model_path: str
+
+    :ivar _model_func_mapping: The mapping between selected model name and related implemented function
+    :vartype _model_func_mapping: dict
+    '''
+    def __init__(self, model_name, model_path):
+            
+        self._model_func_mapping= {"roberta_large_snli": self.__roberta_large_snli}        
+        assert model_name in self._model_func_mapping.keys(), f"Please select one of {self._model_func_mapping.keys()} as target NLI model or add a new model name and related implementation."
+        self.model_name= model_name
+        self.model_path= model_path
+
+
+    def predict_nli(self, premise, hypothesis):
+        ''' This function returns the NLI label ID with "entailment": 0, "neutral": 1, and "contradiction": 2.
+
+        :param premise: The premise
+        :type premise: str
+        :param hypothesis: The hypothesis
+        :type hypothesis: str
+
+        :returns: The NLI label ("entailment": 0, "neutral": 1, and "contradiction": 2)
+        :rtype: int
+        '''
         
-        
+        return self.model_func_mapping[self.model_name](premise, hypothesis)
+
+
+    def __roberta_large_snli(self, premise, hypothesis):
+        ''' This function returns the NLI label ID with "entailment": 0, "neutral": 1, and "contradiction": 2.
+        It uses roberta_large_snli (ynie/roberta-large-snli_mnli_fever_anli_R1_R2_R3-nli) transformer to predict the label.
+
+        :param premise: The premise
+        :type premise: str
+        :param hypothesis: The hypothesis
+        :type hypothesis: str
+
+        :returns: The NLI label ("entailment": 0, "neutral": 1, and "contradiction": 2)
+        :rtype: int
+        '''
+
+        if self._nli_model is None or self._nli_tokenizer is None:
+            self._nli_tokenizer = AutoTokenizer.from_pretrained(self.model_path)
+            self._nli_model = AutoModelForSequenceClassification.from_pretrained(self.model_path)
+
+        input_ids= self._nli_tokenizer.encode_plus(premise, hypothesis, max_length=200
+        , truncation=True, return_tensors="pt")
+        outputs = model(**input_ids)
+
+        return np.argmax(torch.softmax(outputs[0], dim=1)[0].tolist())
