@@ -342,7 +342,26 @@ class NLEMetrics():
                     failed_no+= 1
                     break
         
-        return 1-(failed_no/len(self.claim_list))
+        return round(1-(failed_no/len(self.claim_list)), 4)
+
+
+    @__check_coherence_inputs
+    def WGC(self):
+        ''' This function calculates the weak global coherence metric by following the definition of the "Explainable Automated Fact-Checking for Public Health Claims" paper.
+        The definition: No sentence in the generated explanation text should contradict the claim.
+
+        :returns: The percentage of instances that satisfy this metric.
+        :rtype: float
+        '''        
+        failed_no= 0
+        for claim, pred in zip(self.claim_list, self.pred_list):
+            pred_sents_list= sent_tokenize(pred)
+            for sent in pred_sents_list:
+                if self.nli_model.predict_nli(claim, sent) == NLI_LABEL_ID["contradiction"]:
+                    failed_no+= 1
+                    break
+        
+        return round(1-(failed_no/len(self.claim_list)), 4)
 
 
     def get_all_metrics(self):
@@ -352,9 +371,8 @@ class NLEMetrics():
         :rtype: dict
         '''
 
-        return {"rouge": self.rouge_score(), "SGC": self.SGC(), "bleu": self.bleu_score()}
-        
-        
+        return {"rouge": self.rouge_score(), "SGC": self.SGC(), "WGC": self.WGC(), "bleu": self.bleu_score()}
+                
 
 class NLI(NLIStructure):
     '''
