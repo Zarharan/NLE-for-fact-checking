@@ -364,6 +364,32 @@ class NLEMetrics():
         return round(1-(failed_no/len(self.claim_list)), 4)
 
 
+    @__check_coherence_inputs
+    def LC(self):
+        ''' This function calculates the local coherence metric by following the definition of the "Explainable Automated Fact-Checking for Public Health Claims" paper.
+        The definition: Any two sentences in the generated explanation text must not contradict each other.
+
+        :returns: The percentage of instances that satisfy this metric.
+        :rtype: float
+        '''
+        failed_no= 0
+        for pred in self.pred_list:
+            pred_sents_list= sent_tokenize(pred)
+            sent_counts= len(pred_sents_list)
+            failed_sample= False
+            for sent_index, sent in enumerate(pred_sents_list):
+                for idx in range(sent_index+1,sent_counts):
+                    if self.nli_model.predict_nli(sent, pred_sents_list[idx]) == NLI_LABEL_ID["contradiction"]:
+                        failed_no+= 1
+                        failed_sample= True
+                        break
+                # If only one sentence contradict another one, break and check the next instances
+                if failed_sample:
+                    break
+        
+        return round(1-(failed_no/len(self.claim_list)), 4)
+
+
     def get_all_metrics(self):
         ''' This function calculate all scores to evaluate the pred_list regarding the target_list.
 
@@ -371,7 +397,7 @@ class NLEMetrics():
         :rtype: dict
         '''
 
-        return {"rouge": self.rouge_score(), "SGC": self.SGC(), "WGC": self.WGC(), "bleu": self.bleu_score()}
+        return {"rouge": self.rouge_score(), "SGC": self.SGC(), "WGC": self.WGC(), "LC": self.LC(), "bleu": self.bleu_score()}
                 
 
 class NLI(NLIStructure):
@@ -399,6 +425,7 @@ class NLI(NLIStructure):
 
         self._nli_tokenizer= None
         self._nli_model= None
+        self._device= torch.device('cpu')
 
 
     def predict_nli(self, premise, hypothesis):
@@ -430,11 +457,18 @@ class NLI(NLIStructure):
         '''
 
         if self._nli_model is None or self._nli_tokenizer is None:
+            if torch.cuda.is_available():
+                self._device = torch.device('cuda')
+                print("The cuda is available.\n")
+            else:
+                print("The cuda is not available.\n")
+
             self._nli_tokenizer = AutoTokenizer.from_pretrained(self.model_path)
-            self._nli_model = AutoModelForSequenceClassification.from_pretrained(self.model_path)
+            self._nli_model = AutoModelForSequenceClassification.from_pretrained(self.model_path).to(self._device)
 
         input_ids= self._nli_tokenizer.encode_plus(premise, hypothesis, max_length=200
         , truncation=True, return_tensors="pt")
-        outputs = self._nli_model(**input_ids)
+        transfered_input_ids = {k: v.to(self._device) for k, v in input_ids.items()}
+        outputs = self._nli_model(**transfered_input_ids)
 
         return np.argmax(torch.softmax(outputs[0], dim=1)[0].tolist())
