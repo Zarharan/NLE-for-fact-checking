@@ -56,3 +56,10 @@ def test_insert_experiment(experiment_obj, args, args_hash, file_path):
 def test_select_experiment(experiment_obj, args_hash):
    select_result= experiment_obj.select_experiment(args_hash)
    assert select_result is not None
+
+
+@pytest.mark.experiments
+@pytest.mark.parametrize("experiment_id, result",[("1", "The generated explanation only for test!")])
+def test_insert_instances(experiment_obj, experiment_id, result):
+   instances_data= ExperimentInstancesModel(experiment_id= experiment_id, result= result)
+   assert experiment_obj.insert_instances(instances_data) > 0

@@ -39,7 +39,8 @@ class ExperimentModel(Base):
     id = Column(Integer, primary_key = True)
     args = Column(Text, nullable=False) # The keys and values of the input arguments for an experiment
     args_hash = Column(String(64), unique=True, nullable=False) # The Hash of the args    
-    results = relationship("ExperimentResultModel", back_populates = "experiment")    
+    results = relationship("ExperimentResultModel", back_populates = "experiment")
+    experiment_instances = relationship("ExperimentInstancesModel", back_populates = "experiment")
     
 
 class ExperimentResultModel(Base):
@@ -54,6 +55,20 @@ class ExperimentResultModel(Base):
     file_path = Column(Text, nullable=False) # The path of result file of an experiment
     # create the relationship between experiments and results
     experiment = relationship("ExperimentModel", back_populates = "results")
+
+
+class ExperimentInstancesModel(Base):
+    '''
+    The ExperimentInstancesModel object is a model of a record from experiment_instances table that saves result of experiments for each instances in the database
+    '''
+
+    __tablename__ = 'experiment_instances'
+
+    id = Column(Integer, primary_key = True)
+    experiment_id = Column(Integer, ForeignKey('experiments.id')) # The id of related experiment which this record belongs to
+    result = Column(Text, nullable=False) # The result (predicted veracity, generated explanation, or both) of each instances in the experiment
+    # create the relationship between experiments and results
+    experiment = relationship("ExperimentModel", back_populates = "experiment_instances")    
 
 
 class TextSummary():
@@ -159,6 +174,20 @@ class Experiments():
         self.session.add(result_data)
         self.session.commit()
         return result_data.id
+
+
+    def insert_instances(self, instance_result_data):
+        ''' This function add the result of each instances of an experiment to the related table.
+
+        :param instance_result_data: The object that contains results information of the experiment
+        :type instance_result_data: object
+
+        :returns: The ID of the created record
+        :rtype: int
+        '''
+        self.session.add(instance_result_data)
+        self.session.commit()
+        return instance_result_data.id        
 
 
     def select_experiment(self, args_hash):
