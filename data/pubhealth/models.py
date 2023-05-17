@@ -1,8 +1,9 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Text, ForeignKey
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Text, ForeignKey, Boolean, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import relationship
+import datetime
 
 
 Base = declarative_base()
@@ -38,7 +39,9 @@ class ExperimentModel(Base):
 
     id = Column(Integer, primary_key = True)
     args = Column(Text, nullable=False) # The keys and values of the input arguments for an experiment
-    args_hash = Column(String(64), unique=True, nullable=False) # The Hash of the args    
+    args_hash = Column(String(64), unique=True, nullable=False) # The Hash of the args
+    completed = Column(Boolean, nullable=False, default= True) # Shows whether the experiment was completed or not
+    insert_date= Column(DateTime, nullable=True, default=datetime.datetime.now)
     results = relationship("ExperimentResultModel", back_populates = "experiment")
     experiment_instances = relationship("ExperimentInstancesModel", back_populates = "experiment")
     
@@ -66,6 +69,7 @@ class ExperimentInstancesModel(Base):
 
     id = Column(Integer, primary_key = True)
     experiment_id = Column(Integer, ForeignKey('experiments.id')) # The id of related experiment which this record belongs to
+    claim_id = Column(Integer, nullable=False) # The Id of the related claim to the instance
     result = Column(Text, nullable=False) # The result (predicted veracity, generated explanation, or both) of each instances in the experiment
     # create the relationship between experiments and results
     experiment = relationship("ExperimentModel", back_populates = "experiment_instances")    

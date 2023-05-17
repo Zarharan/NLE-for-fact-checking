@@ -59,7 +59,7 @@ def test_select_experiment(experiment_obj, args_hash):
 
 
 @pytest.mark.experiments
-@pytest.mark.parametrize("experiment_id, result",[("1", "The generated explanation only for test!")])
-def test_insert_instances(experiment_obj, experiment_id, result):
-   instances_data= ExperimentInstancesModel(experiment_id= experiment_id, result= result)
+@pytest.mark.parametrize("experiment_id, claim_id, result",[("1", "1","The generated explanation only for test!")])
+def test_insert_instances(experiment_obj, experiment_id, claim_id, result):
+   instances_data= ExperimentInstancesModel(experiment_id= experiment_id, claim_id= claim_id, result= result)
    assert experiment_obj.insert_instances(instances_data) > 0
