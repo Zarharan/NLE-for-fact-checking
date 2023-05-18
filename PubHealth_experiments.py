@@ -86,29 +86,32 @@ def main():
     experiment_existence= experiments.select_experiment(hashed_args_dict)
     target_experiment_id= None
     
-    if any(experiment_existence.results):
-        print(f"You have already did experiment(s) with entered arguments.\nEntered arguments values:\n{args_dict} \nRelated file result(s): \n")
-        for result in experiment_existence.results:
-            print(f"{result.file_path}\n")
-        
-        print("Do you want to continue?")
-        input_command = input('Enter c to continue, any other key to cancel and exit ... ').strip()[0]
-        if input_command != "c" and input_command != "C":
-            print("The experiment was canceled!")
-            return
-        
-        print("Write a new name for the result file or press enter key to continue with a default name.")
-        input_file_name = input().strip()
-
-        if len(input_file_name)== 0:
-            print("The new results will be saved with a default name!")
-            result_file_name= result_file_name.replace(".csv", f"_{get_utc_time()}.csv")
-        else:            
-            result_file_name= f"{save_path}{input_file_name}.csv"
-        
-        print(f"The new file name is: {result_file_name}")
-    if experiment_existence: # When the experiment exists but does not have any saved file result
+    if experiment_existence: # When the experiment exists
         target_experiment_id= experiment_existence.id
+
+        if any(experiment_existence.results): 
+            # When the experiment includes different save file(s) for the result and it means it is already completed
+            print(f"You have already did experiment(s) with entered arguments.\nEntered arguments values:\n{args_dict} \nRelated file result(s): \n")
+            for result in experiment_existence.results:
+                print(f"{result.file_path}\n")
+            
+            print("Do you want to continue?")
+            input_command = input('Enter c to continue, any other key to cancel and exit ... ').strip()[0]
+            if input_command != "c" and input_command != "C":
+                print("The experiment was canceled!")
+                return
+            
+            print("Write a new name for the result file or press enter key to continue with a default name.")
+            input_file_name = input().strip()
+
+            if len(input_file_name)== 0:
+                print("The new results will be saved with a default name!")
+                result_file_name= result_file_name.replace(".csv", f"_{get_utc_time()}.csv")
+            else:            
+                result_file_name= f"{save_path}{input_file_name}.csv"
+            
+            print(f"The new file name is: {result_file_name}")
+
     else: # When the experiment does not exist
         # save all arguments of the experiment
         experiment_data= ExperimentModel(args= args_dict, args_hash= hashed_args_dict, completed= False)
