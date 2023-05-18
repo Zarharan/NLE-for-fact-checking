@@ -63,3 +63,10 @@ def test_select_experiment(experiment_obj, args_hash):
 def test_insert_instances(experiment_obj, experiment_id, claim_id, result):
    instances_data= ExperimentInstancesModel(experiment_id= experiment_id, claim_id= claim_id, result= result)
    assert experiment_obj.insert_instances(instances_data) > 0
+
+
+@pytest.mark.experiments
+@pytest.mark.parametrize("experiment_id, claim_id",[("1", "1")])
+def test_select_instance(experiment_obj, experiment_id, claim_id):
+   select_result= experiment_obj.select_instance_result(experiment_id, claim_id)
+   assert select_result is not None

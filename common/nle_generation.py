@@ -2,6 +2,7 @@ from common.utils import *
 import json
 from openai.error import RateLimitError
 import backoff
+from data.pubhealth.models import *
 
 
 class NLEGeneration():
@@ -185,11 +186,13 @@ class NLEGeneration():
 
 
   @__check_plm
-  def zero_shot(self, target_instances):
+  def zero_shot(self, target_instances, experiment_id):
     ''' This function explain veracity of instances by using zero-shot and selected plm.
 
     :param target_instances: The input text 
     :type target_instances: list
+    :param experiment_id: The Id of the experiment that we want to save instances results for 
+    :type experiment_id: int
 
     :returns: An input instance list with generated explanation added to each instance
     :rtype: list
@@ -197,24 +200,38 @@ class NLEGeneration():
     
     # create appropriate prompt
     self.__prompt(target_instances, type="zero")
-    
+    experiments= Experiments()
+
     total_instances= len(target_instances)
     for index, target_instance in enumerate(target_instances):
+      claim_id= target_instance["claim_id"]
+      instance_result= experiments.select_instance_result(experiment_id, claim_id)
+      if instance_result:
+        print(f"The claim with Id {claim_id} was ignored because its result exists.")
+        target_instance[self.selected_plm]= instance_result.result
+        continue
+
       print(f"Generating explanation for {index+1}/{total_instances} ...")
       target_instance[self.selected_plm]= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
       
+      # save each instance result into the DB
+      instance_data= ExperimentInstancesModel(experiment_id= experiment_id
+        , claim_id= claim_id, result= target_instance[self.selected_plm])
+      experiments.insert_instances(instance_data)
             
     return target_instances
 
 
   @__check_plm
-  def few_shot(self, demonstration_instances, test_instances):
+  def few_shot(self, demonstration_instances, test_instances, experiment_id):
     ''' This function explain veracity of instances by using few-shot learning.
 
     :param demonstration_instances: The target instances to create the demonstration section of the prompt
     :type demonstration_instances: list
     :param test_instances: The target instances to infer by prompt paradigm
     :type test_instances: list
+    :param experiment_id: The Id of the experiment that we want to save instances results for 
+    :type experiment_id: int    
 
     :returns: An input instance list with generated explanation added to each instance
     :rtype: list
@@ -222,11 +239,24 @@ class NLEGeneration():
 
     # Create the the prompt for in-context learning
     self.__get_few_shot_demonstration(demonstration_instances, test_instances)
+    experiments= Experiments()
 
     # Call the API
     total_instances= len(test_instances)
     for index, target_instance in enumerate(test_instances):
+      claim_id= target_instance["claim_id"]
+      instance_result= experiments.select_instance_result(experiment_id, claim_id)
+      if instance_result:
+        print(f"The claim with Id {claim_id} was ignored because its result exists.")
+        target_instance[self.selected_plm]= instance_result.result
+        continue
+
       print(f"Generating explanation for {index+1}/{total_instances} ...")      
       target_instance[self.selected_plm]= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
+
+      # save each instance result into the DB
+      instance_data= ExperimentInstancesModel(experiment_id= experiment_id
+        , claim_id= claim_id, result= target_instance[self.selected_plm])
+      experiments.insert_instances(instance_data)
     
     return test_instances

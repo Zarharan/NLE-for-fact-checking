@@ -66,6 +66,10 @@ class ExperimentInstancesModel(Base):
     '''
 
     __tablename__ = 'experiment_instances'
+    # create a unique key for claim_id experiment_id pairs
+    __table_args__ = (
+        UniqueConstraint("claim_id", "experiment_id" , name="unique_claim_id_experiment_id"),
+    )    
 
     id = Column(Integer, primary_key = True)
     experiment_id = Column(Integer, ForeignKey('experiments.id')) # The id of related experiment which this record belongs to
@@ -166,6 +170,11 @@ class Experiments():
         return experiment_data.id
 
 
+    def update_completion(self, experiment_id):
+        self.session.query(ExperimentModel).filter(ExperimentModel.id == experiment_id).update({ExperimentModel.completed:True}, synchronize_session = False)
+        self.session.commit()
+
+
     def insert_result(self, result_data):
         ''' This function add the result of an experiment to the results table.
 
@@ -204,9 +213,31 @@ class Experiments():
         :rtype: object
         '''
 
-        select_result= self.session.query(ExperimentModel).join(ExperimentResultModel).filter(ExperimentModel.args_hash== args_hash)
-        
+        select_result= self.session.query(ExperimentModel).join(ExperimentResultModel, isouter = True).filter(ExperimentModel.args_hash== args_hash)
+
         if any(select_result):
             return select_result[0]
         
-        return None       
+        return None
+
+
+    def select_instance_result(self, experiment_id, claim_id):
+        ''' This function select a record from the experiment_instances table by experiment_id and claim_id.
+
+        :param experiment_id: The Id of an experiment
+        :type experiment_id: int
+        :param claim_id: The Idof the related claim (instance)
+        :type claim_id: int
+
+        :returns: The experiment_instances object of the selected record
+        :rtype: object
+        '''
+
+        select_result= self.session.query(ExperimentInstancesModel).filter(
+            ExperimentInstancesModel.experiment_id== experiment_id
+            , ExperimentInstancesModel.claim_id== claim_id)
+
+        if any(select_result):
+            return select_result[0]
+        
+        return None

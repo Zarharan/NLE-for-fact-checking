@@ -84,8 +84,9 @@ def main():
 
     experiments= Experiments()
     experiment_existence= experiments.select_experiment(hashed_args_dict)
-
-    if experiment_existence:
+    target_experiment_id= None
+    
+    if any(experiment_existence.results):
         print(f"You have already did experiment(s) with entered arguments.\nEntered arguments values:\n{args_dict} \nRelated file result(s): \n")
         for result in experiment_existence.results:
             print(f"{result.file_path}\n")
@@ -106,6 +107,13 @@ def main():
             result_file_name= f"{save_path}{input_file_name}.csv"
         
         print(f"The new file name is: {result_file_name}")
+    if experiment_existence: # When the experiment exists but does not have any saved file result
+        target_experiment_id= experiment_existence.id
+    else: # When the experiment does not exist
+        # save all arguments of the experiment
+        experiment_data= ExperimentModel(args= args_dict, args_hash= hashed_args_dict, completed= False)
+        experiments.insert(experiment_data)
+        target_experiment_id= experiment_data.id
 
     # Object for summarization the main text of the news
     summarization= None
@@ -123,7 +131,7 @@ def main():
             , k_rand_instance=args.k_rand_instance, target_set= args.test_target_set
             , random_seed= args.seed, summarization_obj= summarization)
         
-        nle_result= nle_generator.zero_shot(selected_instances)
+        nle_result= nle_generator.zero_shot(selected_instances, target_experiment_id)
     
     elif args.prompt_type == "few":
 
@@ -136,7 +144,7 @@ def main():
             , random_seed= args.seed, summarization_obj= summarization
             , exclude_claim_ids= pd.DataFrame(demonstration_instances)['claim_id'])
         
-        nle_result= nle_generator.few_shot(demonstration_instances, test_instances)
+        nle_result= nle_generator.few_shot(demonstration_instances, test_instances, target_experiment_id)
 
     if args.add_chatgpt_prompt:
         add_chatgpt_prompt(nle_result, args.prompt_type)
@@ -148,15 +156,11 @@ def main():
     nle_result_df.to_csv(result_file_name)
 
     # Save the result file path into DB
-    if experiment_existence:
-        # Only add new result since the arguments have been already saved
-        experiment_result= ExperimentResultModel(experiment_id= experiment_existence.id,file_path = result_file_name)
-        experiments.insert_result(experiment_result)
-    else:
-        # save all arguments and the result of the experiment
-        experiment_data= ExperimentModel(args= args_dict, args_hash= hashed_args_dict)
-        experiment_data.results= [ExperimentResultModel(file_path = result_file_name)]
-        experiments.insert(experiment_data)
+    # Only add new result since the arguments have been already saved
+    experiment_result= ExperimentResultModel(experiment_id= target_experiment_id,file_path = result_file_name)
+    experiments.insert_result(experiment_result)
+    # update the completion of the experiment
+    experiments.update_completion(experiment_id= target_experiment_id)
 
     print(f"The experiment Done! the result was saved at {result_file_name}")
 
