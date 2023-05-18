@@ -110,7 +110,16 @@ class Summarization():
     :param model_name: The target model to generate summary
     :type model_name: string
     :param model_path: The path of weights of the target model to generate summary (except GPT-3 model)
-    :type model_path: string        
+    :type model_path: string
+
+    :ivar _summarizer_tokenizer: The loaded tokenizer to prevent loading several times
+    :vartype _summarizer_tokenizer: object
+    :ivar _summarizer: The loaded summarizer model to prevent loading several times
+    :vartype _summarizer: object
+    :ivar text_summary: The object to do CRUD queries on the summaries table
+    :vartype text_summary: object
+    :ivar _device: The target device (CPU or GPU) on which the model will be loaded.
+    :vartype _device: object    
     '''
     def __init__(self, max_tokens= 300, temperature= 0.5, model_name= "bart"
         , model_path="data/models/bart"):
@@ -122,6 +131,8 @@ class Summarization():
         self._summarizer= None
         self._summarizer_tokenizer= None
         self.text_summary = TextSummary()
+
+        self._device= torch.device('cpu')
 
     
     def get_summary(self, text_for_summary, claim_id):
@@ -198,14 +209,21 @@ class Summarization():
         '''      
         
         if self._summarizer is None or self._summarizer_tokenizer is None: 
+            if torch.cuda.is_available():
+                self._device = torch.device('cuda')
+                print("The cuda is available.\n")
+            else:
+                print("The cuda is not available.\n")
+
             # only load for first use
             self._summarizer_tokenizer = AutoTokenizer.from_pretrained(self.model_path)
-            self._summarizer = AutoModelForSeq2SeqLM.from_pretrained(self.model_path)
+            self._summarizer = AutoModelForSeq2SeqLM.from_pretrained(self.model_path).to(self._device)
             print("Bart model was loaded successfully.")
 
         inputs = self._summarizer_tokenizer([text_for_summary], max_length=max_length
         , truncation=True, return_tensors="pt")
-        summary_ids = self._summarizer.generate(inputs["input_ids"], num_beams=2, min_length=0, max_length=self.max_tokens)
+        transfered_input_ids = {k: v.to(self._device) for k, v in inputs.items()}       
+        summary_ids = self._summarizer.generate(transfered_input_ids["input_ids"], num_beams=2, min_length=0, max_length=self.max_tokens)
         return self._summarizer_tokenizer.batch_decode(summary_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 
 
@@ -220,13 +238,20 @@ class Summarization():
         '''      
 
         if self._summarizer is None or self._summarizer_tokenizer is None: 
+            if torch.cuda.is_available():
+                self._device = torch.device('cuda')
+                print("The cuda is available.\n")
+            else:
+                print("The cuda is not available.\n")
+
             # only load for first use
             self._summarizer_tokenizer = AutoTokenizer.from_pretrained(self.model_path, trust_remote_code=True)
-            self._summarizer = AutoModelForSeq2SeqLM.from_pretrained(self.model_path, trust_remote_code=True)
+            self._summarizer = AutoModelForSeq2SeqLM.from_pretrained(self.model_path, trust_remote_code=True).to(self._device)
             print("LSG Bart model was loaded successfully.")
 
-        inputs = self._summarizer_tokenizer([text_for_summary], return_tensors="pt")
-        summary_ids = self._summarizer.generate(inputs["input_ids"], num_beams=2, max_length=self.max_tokens)
+        inputs = self._summarizer_tokenizer([text_for_summary], return_tensors="pt")        
+        transfered_input_ids = {k: v.to(self._device) for k, v in inputs.items()}       
+        summary_ids = self._summarizer.generate(transfered_input_ids["input_ids"], num_beams=2, max_length=self.max_tokens)
         return self._summarizer_tokenizer.batch_decode(summary_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
 
 
@@ -408,13 +433,15 @@ class NLI(NLIStructure):
     :type model_name: str
     :param model_path: The path of selected model to load
     :type model_path: str
-    :param _nli_tokenizer: The loaded tokenizer to prevent loading several times
-    :type _nli_tokenizer: object
-    :param _nli_model: The loaded NLI model to prevent loading several times
-    :type _nli_model: object    
 
+    :ivar _nli_tokenizer: The loaded tokenizer to prevent loading several times
+    :vartype _nli_tokenizer: object
+    :ivar _nli_model: The loaded NLI model to prevent loading several times
+    :vartype _nli_model: object
     :ivar _model_func_mapping: The mapping between selected model name and related implemented function
     :vartype _model_func_mapping: dict
+    :ivar _device: The target device (CPU or GPU) on which the model will be loaded.
+    :vartype _device: object
     '''
     def __init__(self, model_name, model_path):
             
