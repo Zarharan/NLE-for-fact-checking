@@ -265,6 +265,12 @@ class NLEMetrics():
     :type target_list: list
     :param bertscore_model: The model to calculate the BERTScore
     :type bertscore_model: string
+    :param claim_list: The list of claims
+    :type claim_list: list
+    :param claim_gold_label_list: The list of ground truth label of claims
+    :type claim_gold_label_list: list
+    :param nli_model: The NLI model to calculate coherence metrics (an object of a class inherited from NLIStructure)
+    :type nli_model: object
 
     :ivar rouge: The object to calculate the rouge score
     :vartype rouge: object
@@ -274,12 +280,13 @@ class NLEMetrics():
     :vartype bleu: object        
     '''
     def __init__(self, pred_list = None, target_list= None
-        , bertscore_model= "microsoft/deberta-xlarge-mnli", claim_list= [], nli_model= None):
+        , bertscore_model= "microsoft/deberta-xlarge-mnli", claim_list= [], claim_gold_label_list, nli_model= None):
         
         self.pred_list= pred_list
         self.target_list= target_list
         self.bertscore_model= bertscore_model
         self.claim_list= claim_list
+        self.claim_gold_label_list= claim_gold_label_list
         self.nli_model= nli_model
 
         self.rouge= None
@@ -377,12 +384,14 @@ class NLEMetrics():
 
         :returns: The percentage of instances that satisfy this metric.
         :rtype: float
-        '''        
+        '''
+        assert len(self.claim_gold_label_list) > 0, "Please set the claim's ground truth label list"
+
         failed_no= 0
-        for claim, pred in zip(self.claim_list, self.pred_list):
+        for claim, pred, claim_label in zip(self.claim_list, self.pred_list, self.claim_gold_label_list):
             pred_sents_list= sent_tokenize(pred)
             for sent in pred_sents_list:
-                if self.nli_model.predict_nli(claim, sent) == NLI_LABEL_ID["contradiction"]:
+                if self.nli_model.predict_nli(claim, sent) == NLI_LABEL_ID["contradiction"] and claim_label.strip().lower() != "false":
                     failed_no+= 1
                     break
         

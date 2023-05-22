@@ -45,7 +45,7 @@ def report_nle_metrics(file_path, pred_col_title, target_col_title, metrics_obj)
     :rtype: dict
     '''
     
-    metrics_obj.pred_list, metrics_obj.target_list, metrics_obj.claim_list = get_pred_target_colms(file_path, pred_col_title, target_col_title, "claim")
+    metrics_obj.pred_list, metrics_obj.target_list, metrics_obj.claim_list, metrics_obj.claim_gold_label_list = get_pred_target_colms(file_path, pred_col_title, target_col_title, "claim", "label")
 
     all_metrics= metrics_obj.get_all_metrics()
     print(all_metrics)
