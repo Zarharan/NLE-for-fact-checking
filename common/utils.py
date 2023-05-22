@@ -15,6 +15,7 @@ import spacy
 import numpy as np
 from common.nli_structure import *
 import torch
+from allennlp_models import pretrained
 
 
 # nltk.download('punkt')
@@ -454,7 +455,7 @@ class NLI(NLIStructure):
     '''
     def __init__(self, model_name, model_path):
             
-        self._model_func_mapping= {"roberta_large_snli": self.__roberta_large_snli}        
+        self._model_func_mapping= {"roberta_large_snli": self.__roberta_large_snli, "allennlp_nli_models": self.__allennlp_nli_models}
         assert model_name in self._model_func_mapping.keys(), f"Please select one of {self._model_func_mapping.keys()} as target NLI model or add a new model name and related implementation."
         self.model_name= model_name
         self.model_path= model_path
@@ -508,3 +509,23 @@ class NLI(NLIStructure):
         outputs = self._nli_model(**transfered_input_ids)
 
         return np.argmax(torch.softmax(outputs[0], dim=1)[0].tolist())
+
+
+    def __allennlp_nli_models(self, premise, hypothesis):
+        ''' This function returns the NLI label ID with "entailment": 0, "neutral": 1, and "contradiction": 2.
+        It uses the NLI model that is set in self.model_path (self.model_path value options: pair-classification-decomposable-attention-elmo, pair-classification-roberta-mnli, or pair-classification-roberta-snli) to predict the label.
+
+        :param premise: The premise
+        :type premise: str
+        :param hypothesis: The hypothesis
+        :type hypothesis: str
+
+        :returns: The NLI label ("entailment": 0, "neutral": 1, and "contradiction": 2)
+        :rtype: int
+        '''
+
+        if self._nli_model is None:
+            self._nli_model = pretrained.load_predictor(self.model_path)
+        
+        result= self._nli_model.predict_json({ "premise": premise, "hypothesis": hypothesis})
+        return NLI_LABEL_ID[result["label"]]

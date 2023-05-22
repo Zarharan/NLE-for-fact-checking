@@ -103,9 +103,9 @@ def main():
         , choices=['explanation', 'veracity', 'joint'], type= str)
     parser.add_argument("-nli_model_name", "--nli_model_name"
         , help = " A model name to calculate the SGC and WGC scores", default="roberta_large_snli"
-        , choices=['roberta_large_snli'], type= str)
+        , choices=['roberta_large_snli', 'allennlp_nli_models'], type= str)
     parser.add_argument("-nli_model_path", "--nli_model_path"
-        , help = " The path of selected model to calculate the SGC and WGC scores"
+        , help = " The path of selected model to calculate the SGC and WGC scores. Different options for AllenNLP models: pair-classification-decomposable-attention-elmo, pair-classification-roberta-mnli, or pair-classification-roberta-snli"
         , default="data/models/roberta_large_snli", type= str)
 
     # Read arguments from command line
