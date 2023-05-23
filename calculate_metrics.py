@@ -6,6 +6,13 @@ import glob
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
 
 
+# logging
+file_handler = logging.FileHandler('calculate_metrics.log')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+# End of logging
+
+
 def get_pred_target_colms(file_path, *args):
     ''' This function read a file and returns the content of the selected columns in args.
 
@@ -56,8 +63,8 @@ def report_nle_metrics(file_path, pred_col_title, target_col_title, metrics_obj,
                         , 'LC': metrics_obj.LC
                         , 'bleu': metrics_obj.bleu_score}
 
-    target_metric_result= metric_fun_map[target_metric]
-    print(target_metric_result)
+    target_metric_result= metric_fun_map[target_metric]()
+    log(target_metric_result)
     
     return target_metric_result
 
@@ -135,11 +142,11 @@ def main():
         files = glob.glob(args.target_path + "/*.csv")
 
     for file_name in files:
-        print("-"*50)
-        print(f"Calculating metrics for {file_name}:")
+        log("-"*50)
+        log(f"Calculating metrics for {file_name}:")
 
         if args.task_type=="veracity":
-            print(report_veracity_metrics(file_name, args.pred_col_title, args.target_col_title))
+            log(report_veracity_metrics(file_name, args.pred_col_title, args.target_col_title))
         elif args.task_type=="explanation":
             report_nle_metrics(file_name, args.pred_col_title, args.target_col_title, nle_metrics, args.target_metric)
         else: # joint task
@@ -149,4 +156,7 @@ def main():
 if __name__ == "__main__":
     # stuff only to run when not called via 'import' here
 
-    main()
+    try:
+        main()
+    except Exception as err:
+        log(f"Unexpected error: {err}, type: {type(err)}")

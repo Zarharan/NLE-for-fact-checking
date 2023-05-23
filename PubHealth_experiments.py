@@ -8,6 +8,13 @@ from dict_hash import sha256
 from data.pubhealth.models import *
 
 
+# logging
+file_handler = logging.FileHandler('PubHealth_experiments.log')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+# End of logging
+
+
 def main():
     # Initialize parser
     parser = argparse.ArgumentParser()
@@ -91,26 +98,26 @@ def main():
 
         if any(experiment_existence.results): 
             # When the experiment includes different save file(s) for the result and it means it is already completed
-            print(f"You have already did experiment(s) with entered arguments.\nEntered arguments values:\n{args_dict} \nRelated file result(s): \n")
+            log(f"You have already did experiment(s) with entered arguments.\nEntered arguments values:\n{args_dict} \nRelated file result(s): \n")
             for result in experiment_existence.results:
-                print(f"{result.file_path}\n")
+                log(f"{result.file_path}\n")
             
-            print("Do you want to continue?")
+            log("Do you want to continue?")
             input_command = input('Enter c to continue, any other key to cancel and exit ... ').strip()[0]
             if input_command != "c" and input_command != "C":
-                print("The experiment was canceled!")
+                log("The experiment was canceled!")
                 return
             
-            print("Write a new name for the result file or press enter key to continue with a default name.")
+            log("Write a new name for the result file or press enter key to continue with a default name.")
             input_file_name = input().strip()
 
             if len(input_file_name)== 0:
-                print("The new results will be saved with a default name!")
+                log("The new results will be saved with a default name!")
                 result_file_name= result_file_name.replace(".csv", f"_{get_utc_time()}.csv")
             else:            
                 result_file_name= f"{save_path}{input_file_name}.csv"
             
-            print(f"The new file name is: {result_file_name}")
+            log(f"The new file name is: {result_file_name}")
 
     else: # When the experiment does not exist
         # save all arguments of the experiment
@@ -165,13 +172,15 @@ def main():
     # update the completion of the experiment
     experiments.update_completion(experiment_id= target_experiment_id)
 
-    print(f"The experiment Done! the result was saved at {result_file_name}")
+    log(f"The experiment Done! the result was saved at {result_file_name}")
 
 
 if __name__ == "__main__":
     # stuff only to run when not called via 'import' here
-
-    main()
+    try:
+        main()
+    except Exception as err:
+        log(f"Unexpected error: {err}, type: {type(err)}")
 
 
 #  A sample of few shot inference with summarization by using gpt3

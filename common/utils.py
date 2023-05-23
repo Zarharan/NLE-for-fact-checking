@@ -9,13 +9,14 @@ from torchmetrics import BLEUScore
 from torchmetrics.text.rouge import ROUGEScore
 import nltk
 from datetime import timezone
-import datetime
+import datetime, time
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoModelForSequenceClassification
 import spacy
 import numpy as np
 from common.nli_structure import *
 import torch
 from allennlp_models import pretrained
+import logging
 
 
 # nltk.download('punkt')
@@ -51,6 +52,22 @@ NLI_LABEL_ID= {
 # ToDo: Remove tokens before making the code publicly available.
 HF_TOKEN= "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"
 OAI_API_KEY = "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"
+
+# logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
+stream_handler = logging.StreamHandler()
+# End of logging
+
+
+def log(*args):
+    '''
+    This function print and log all input arguments into a file.
+    '''      
+    for arg in args:
+        print(arg)
+        logger.info(arg)
 
 
 def get_utc_time():
@@ -281,7 +298,7 @@ class NLEMetrics():
     :vartype bleu: object        
     '''
     def __init__(self, pred_list = None, target_list= None
-        , bertscore_model= "microsoft/deberta-xlarge-mnli", claim_list= [], claim_gold_label_list, nli_model= None):
+        , bertscore_model= "microsoft/deberta-xlarge-mnli", claim_list= [], claim_gold_label_list=[], nli_model= None):
         
         self.pred_list= pred_list
         self.target_list= target_list

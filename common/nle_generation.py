@@ -207,11 +207,11 @@ class NLEGeneration():
       claim_id= target_instance["claim_id"]
       instance_result= experiments.select_instance_result(experiment_id, claim_id)
       if instance_result:
-        print(f"The claim with Id {claim_id} was ignored because its result exists.")
+        log(f"The claim with Id {claim_id} was ignored because its result exists.")
         target_instance[self.selected_plm]= instance_result.result
         continue
 
-      print(f"Generating explanation for {index+1}/{total_instances} ...")
+      log(f"Generating explanation for {index+1}/{total_instances} ...")
       target_instance[self.selected_plm]= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
       
       # save each instance result into the DB
@@ -247,11 +247,11 @@ class NLEGeneration():
       claim_id= target_instance["claim_id"]
       instance_result= experiments.select_instance_result(experiment_id, claim_id)
       if instance_result:
-        print(f"The claim with Id {claim_id} was ignored because its result exists.")
+        log(f"The claim with Id {claim_id} was ignored because its result exists.")
         target_instance[self.selected_plm]= instance_result.result
         continue
 
-      print(f"Generating explanation for {index+1}/{total_instances} ...")      
+      log(f"Generating explanation for {index+1}/{total_instances} ...")      
       target_instance[self.selected_plm]= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
 
       # save each instance result into the DB
