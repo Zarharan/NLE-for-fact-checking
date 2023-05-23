@@ -29,7 +29,7 @@ def get_pred_target_colms(file_path, *args):
     return tuple(lst_result)
 
 
-def report_nle_metrics(file_path, pred_col_title, target_col_title, metrics_obj):
+def report_nle_metrics(file_path, pred_col_title, target_col_title, metrics_obj, target_metric):
     ''' This function read a file and report evaluation metrics for the generated explanation in the file.
 
     :param file_path: The path to the file to report metrics for it
@@ -40,6 +40,8 @@ def report_nle_metrics(file_path, pred_col_title, target_col_title, metrics_obj)
     :type target_col_title: str
     :param metrics_obj: An instance of NLEMetrics class to obtain metrics
     :type metrics_obj: object
+    :param target_metric: The target metric you want to calculate
+    :type target_metric: str
 
     :returns: The calculated metrics
     :rtype: dict
@@ -47,10 +49,17 @@ def report_nle_metrics(file_path, pred_col_title, target_col_title, metrics_obj)
     
     metrics_obj.pred_list, metrics_obj.target_list, metrics_obj.claim_list, metrics_obj.claim_gold_label_list = get_pred_target_colms(file_path, pred_col_title, target_col_title, "claim", "label")
 
-    all_metrics= metrics_obj.get_all_metrics()
-    print(all_metrics)
+    metric_fun_map = {'all': metrics_obj.get_all_metrics
+                        , 'rouge': metrics_obj.rouge_score
+                        , 'SGC': metrics_obj.SGC
+                        , 'WGC': metrics_obj.WGC
+                        , 'LC': metrics_obj.LC
+                        , 'bleu': metrics_obj.bleu_score}
+
+    target_metric_result= metric_fun_map[target_metric]
+    print(target_metric_result)
     
-    return all_metrics
+    return target_metric_result
 
 
 def report_veracity_metrics(file_path, pred_col_title, target_col_title):
@@ -107,6 +116,9 @@ def main():
     parser.add_argument("-nli_model_path", "--nli_model_path"
         , help = " The path of selected model to calculate the SGC and WGC scores. Different options for AllenNLP models: pair-classification-decomposable-attention-elmo, pair-classification-roberta-mnli, or pair-classification-roberta-snli"
         , default="data/models/roberta_large_snli", type= str)
+    parser.add_argument("-target_metric", "--target_metric"
+        , help = "The target metric you want to calculate. It is only for explanation!", default="all"
+        , choices=['all', 'rouge', 'SGC', 'WGC', 'LC', 'bleu'], type= str)        
 
     # Read arguments from command line
     args = parser.parse_args()
@@ -129,7 +141,7 @@ def main():
         if args.task_type=="veracity":
             print(report_veracity_metrics(file_name, args.pred_col_title, args.target_col_title))
         elif args.task_type=="explanation":
-            report_nle_metrics(file_name, args.pred_col_title, args.target_col_title, nle_metrics)
+            report_nle_metrics(file_name, args.pred_col_title, args.target_col_title, nle_metrics, args.target_metric)
         else: # joint task
             pass
         
