@@ -15,7 +15,7 @@ import spacy
 import numpy as np
 from common.nli_structure import *
 import torch
-from allennlp_models import pretrained
+# from allennlp_models import pretrained
 import logging
 
 
@@ -322,8 +322,9 @@ class NLEMetrics():
         if self.rouge is None:
             self.rouge = ROUGEScore()
             
+        log("Start calculating ROUGE score ...")
         rouge_result= self.rouge(self.pred_list, self.target_list)
-
+        log(rouge_result)
         return rouge_result
 
     
@@ -337,8 +338,10 @@ class NLEMetrics():
         if self.bertscore is None:
             self.bertscore = BERTScore(model_type= self.bertscore_model)
 
+        log("Start calculating BERT score ...")
         score = self.bertscore(self.pred_list, self.target_list)
         rounded_score = {k: [round(v, 4) for v in vv] for k, vv in score.items()}
+        log(f"BERT Score: {rounded_score}")
         return rounded_score
 
 
@@ -353,11 +356,16 @@ class NLEMetrics():
             self.bleu = BLEUScore()        
         
         bleu_avg= 0
+        log("Start calculating BLEU score ...")
+        target_count= len(self.target_list)
         # Calculate the average bleu score for all instances in the list
-        for pred, target in zip(self.pred_list, self.target_list):
+        for index, (pred, target) in enumerate(zip(self.pred_list, self.target_list)):
+            if (index+1) % 100 == 0:
+                log(f"-------- {index}/{target_count} --------")            
             bleu_avg+= self.bleu([pred], [[target]]).item()
 
-        rounded_score = round(bleu_avg / len(self.target_list), 4)
+        rounded_score = round(bleu_avg / target_count, 4)
+        log(f"BLEU Score: {rounded_score}")
         return rounded_score
 
 
@@ -385,14 +393,21 @@ class NLEMetrics():
         :rtype: float
         '''        
         failed_no= 0
-        for claim, pred in zip(self.claim_list, self.pred_list):
+        log("Start calculating SGC score ...")
+        target_count= len(self.claim_list)
+        for index, (claim, pred) in enumerate(zip(self.claim_list, self.pred_list)):
+            if (index+1) % 100 == 0:
+                log(f"-------- {index}/{target_count} --------")
+                
             pred_sents_list= sent_tokenize(pred)
             for sent in pred_sents_list:
                 if self.nli_model.predict_nli(claim, sent) != NLI_LABEL_ID["entailment"]:
                     failed_no+= 1
                     break
         
-        return round(1-(failed_no/len(self.claim_list)), 4)
+        rounded_score = round(1-(failed_no/target_count), 4)
+        log(f"SGC Score: {rounded_score}")
+        return rounded_score
 
 
     @__check_coherence_inputs
@@ -406,14 +421,21 @@ class NLEMetrics():
         assert len(self.claim_gold_label_list) > 0, "Please set the claim's ground truth label list"
 
         failed_no= 0
+        log("Start calculating WGC score ...")
+        target_count= len(self.claim_list)
         for claim, pred, claim_label in zip(self.claim_list, self.pred_list, self.claim_gold_label_list):
+            if (index+1) % 100 == 0:
+                log(f"-------- {index}/{target_count} --------")
+                
             pred_sents_list= sent_tokenize(pred)
             for sent in pred_sents_list:
                 if self.nli_model.predict_nli(claim, sent) == NLI_LABEL_ID["contradiction"] and claim_label.strip().lower() != "false":
                     failed_no+= 1
                     break
         
-        return round(1-(failed_no/len(self.claim_list)), 4)
+        rounded_score = round(1-(failed_no/target_count), 4)
+        log(f"WGC Score: {rounded_score}")
+        return rounded_score
 
 
     @__check_coherence_inputs
@@ -425,7 +447,12 @@ class NLEMetrics():
         :rtype: float
         '''
         failed_no= 0
-        for pred in self.pred_list:
+        log("Start calculating LC score ...")
+        target_count= len(self.pred_list)
+        for index, pred in enumerate(self.pred_list):
+            if (index+1) % 100 == 0:
+                log(f"-------- {index}/{target_count} --------")
+
             pred_sents_list= sent_tokenize(pred)
             sent_counts= len(pred_sents_list)
             failed_sample= False
@@ -439,7 +466,9 @@ class NLEMetrics():
                 if failed_sample:
                     break
         
-        return round(1-(failed_no/len(self.claim_list)), 4)
+        rounded_score = round(1-(failed_no/target_count), 4)
+        log(f"LC Score: {rounded_score}")
+        return rounded_score
 
 
     def get_all_metrics(self):
