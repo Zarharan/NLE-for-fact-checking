@@ -135,6 +135,8 @@ def main():
 
     files = []
 
+    log("Input arguments for calculating metric(s): ", vars(args))
+
     if args.type == "file":
         files.append(args.target_path)
     else:

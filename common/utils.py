@@ -15,7 +15,7 @@ import spacy
 import numpy as np
 from common.nli_structure import *
 import torch
-# from allennlp_models import pretrained
+from allennlp_models import pretrained
 import logging
 
 
@@ -361,7 +361,7 @@ class NLEMetrics():
         # Calculate the average bleu score for all instances in the list
         for index, (pred, target) in enumerate(zip(self.pred_list, self.target_list)):
             if (index+1) % 100 == 0:
-                log(f"-------- {index}/{target_count} --------")            
+                log(f"-------- {index+1}/{target_count} --------")            
             bleu_avg+= self.bleu([pred], [[target]]).item()
 
         rounded_score = round(bleu_avg / target_count, 4)
@@ -397,7 +397,7 @@ class NLEMetrics():
         target_count= len(self.claim_list)
         for index, (claim, pred) in enumerate(zip(self.claim_list, self.pred_list)):
             if (index+1) % 100 == 0:
-                log(f"-------- {index}/{target_count} --------")
+                log(f"-------- {index+1}/{target_count} --------")
                 
             pred_sents_list= sent_tokenize(pred)
             for sent in pred_sents_list:
@@ -423,9 +423,9 @@ class NLEMetrics():
         failed_no= 0
         log("Start calculating WGC score ...")
         target_count= len(self.claim_list)
-        for claim, pred, claim_label in zip(self.claim_list, self.pred_list, self.claim_gold_label_list):
+        for index, (claim, pred, claim_label) in enumerate(zip(self.claim_list, self.pred_list, self.claim_gold_label_list)):
             if (index+1) % 100 == 0:
-                log(f"-------- {index}/{target_count} --------")
+                log(f"-------- {index+1}/{target_count} --------")
                 
             pred_sents_list= sent_tokenize(pred)
             for sent in pred_sents_list:
@@ -451,7 +451,7 @@ class NLEMetrics():
         target_count= len(self.pred_list)
         for index, pred in enumerate(self.pred_list):
             if (index+1) % 100 == 0:
-                log(f"-------- {index}/{target_count} --------")
+                log(f"-------- {index+1}/{target_count} --------")
 
             pred_sents_list= sent_tokenize(pred)
             sent_counts= len(pred_sents_list)
