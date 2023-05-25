@@ -38,6 +38,12 @@ PROMPT_TEMPLATES = {
     }
 }
 
+CHAT_COMPLETION_SYSTEM_ROLE= {
+    "veracity": "You are a helpful assistant that predicts the veracity of a claim by considering the context. Instructions: - Predict the veracity of claims by considering just the related context. - Assign one of True, False, Mixture, or Unproven as the veracity label of the claim.",
+    "explanation": "You are a helpful assistant that explains the veracity of a claim by considering the context. Instructions: - Explain the veracity of a claim by considering just the related context.",
+    "joint":"You are a helpful assistant that predicts the veracity of a claim and explains the reason for your prediction by considering the context. Instructions: - Predict the veracity of a claim and explain your reasoning by considering just the related context. - Assign one of True, False, Mixture, or Unproven as the veracity label of the claim."
+}
+
 CHATGPT_EXTRA_DESC= {
     "zero": "Can you please explain the veracity of the following claim by considering the context?\n",
     "few": "The following are some examples of explanations for the veracity of a claim. The context for each claim is provided. Can you please explain the veracity of the last claim by considering its context?\n"

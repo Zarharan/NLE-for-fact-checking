@@ -31,39 +31,109 @@ class NLEGeneration():
     self.prompt_key= prompt_key
     template= prompt_key.split("/")
     self.prompt_template= PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]]
+    self.chat_completion_system_role_content= CHAT_COMPLETION_SYSTEM_ROLE[template[0]]
     self.selected_plm= plm
     self.plm_engine= plm_engine
 
     
-    self.plms= {"gpt3": {"api_func": self.__openai_query, "engine": "text-davinci-003"}
-      , "chat_gpt": {"api_func": self.__openai_chat_query, "engine": "gpt-3.5-turbo"}
-      , "gptj": {"api_func": self.__hf_models_query, "model_name": "EleutherAI/gpt-j-6B"}}
+    self.plms= {"gpt3": {"api_func": self.__openai_query, "engine": "text-davinci-003", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
+      , "chat_gpt": {"api_func": self.__openai_chat_query, "engine": "gpt-3.5-turbo", "zero_prompt_func": self.__chat_based_zero_shot_structure, "few_prompt_func": self.__chat_based_few_shot_structure}
+      , "gptj": {"api_func": self.__hf_models_query, "model_name": "EleutherAI/gpt-j-6B", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}}
 
 
-  def __prompt(self, target_instances, type="zero"):
-    ''' This function creates appropriate prompt for the input instances.
+  def __prompt(self, target_instance, type="zero"):
+    ''' This function creates appropriate prompt for the input instance.
 
-    :param target_instances: The input instances to create prompt for them
-    :type target_instances: str
+    :param target_instance: The input instance to create prompt for them
+    :type target_instance: dict
     :param type: By using zero, the prompt does not include the gold explanation
     :type type: str
 
-    :returns: The input instance list with prompts added to each instance
-    :rtype: list
+    :returns: The input instance with prompts added to it
+    :rtype: dict
     '''
-
-    for target_instance in target_instances:
-      target_instance['prompt'] = self.prompt_template.format(target_instance['summarized_main_text'], target_instance['claim']
-        , "" if type=="zero" and any(item in self.prompt_key for item in ["veracity", "joint"]) else target_instance['label']
-        , "" if type=="zero" or "veracity" in self.prompt_key else target_instance['explanation'])
-
-      if self.selected_plm == "chat_gpt" and type=="zero":
-        target_instance['prompt']= [
-                        {"role": "system", "content": "You are a helpful assistant that explains the veracity of a claim by considering the context. Instructions: - Only explain the veracity of claims by considering just the related context."},
-                        {"role": "user", "content": target_instance['prompt']}
-                      ]
+    target_instance['prompt'] = self.prompt_template.format(target_instance['summarized_main_text'], target_instance['claim']
+      , "" if type=="zero" and any(item in self.prompt_key for item in ["veracity", "joint"]) else target_instance['label']
+      , "" if type=="zero" or "veracity" in self.prompt_key else target_instance['explanation'])
             
-    return target_instances
+    return target_instance
+
+
+  def __general_few_shot_structure(self, demonstration_instances, test_instance):
+    ''' This function generates the few shot structure including demonstration examples.
+
+    :param demonstration_instances: The target instances to create the demonstration section of the prompt
+    :type demonstration_instances: list
+    :param test_instance: The target instance to infer by prompt paradigm
+    :type test_instance: dict    
+
+    :returns: The input instance with the few shot prompt including demonstration examples
+    :rtype: dict
+    '''    
+    # Create the demonstration section of the prompt    
+    demonstration_str= ""
+    for item in demonstration_instances:
+      demonstration_str+= self.__prompt(item, type="few")["prompt"] + "###\n"
+
+    # Create propmt for test instances. Add the demonstration section at the begining of each instances.
+    test_instance["prompt"]= demonstration_str + self.__prompt(test_instance, type="zero")["prompt"]
+    
+    return test_instance
+
+
+  def __chat_based_zero_shot_structure(self, target_instance):
+    ''' This function creates appropriate prompt for the input instance.
+
+    :param target_instance: The input instance to create prompt for them
+    :type target_instance: dict
+
+    :returns: The input instance with prompts added to it
+    :rtype: dict
+    '''    
+    if self.selected_plm == "chat_gpt":
+      # create instruction section for Chat Completions
+      instruction= [{"role": "system", "content": self.chat_completion_system_role_content}]
+      
+      target_instance["prompt"]= instruction + [{"role": "user", "content": self.__prompt(target_instance, type="zero")["prompt"]}]
+      
+      return target_instance
+    else:
+      raise Exception("Implement the appropriate structure for the selected PLM!")
+
+
+  def __chat_based_few_shot_structure(self, demonstration_instances, test_instance):
+    ''' This function generates the few shot structure including demonstration examples.
+
+    :param demonstration_instances: The target instances to create the demonstration section of the prompt
+    :type demonstration_instances: list
+    :param test_instance: The target instance to infer by prompt paradigm
+    :type test_instance: dict    
+
+    :returns: The input instance with the few shot prompt including demonstration examples
+    :rtype: dict
+    '''
+    if self.selected_plm == "chat_gpt":
+      # create demonestration section for Chat Completions
+      few_shot_additional_instruction= " - Use the provided examples to learn more about explanation."
+      demonstration_lst= [{"role": "system", "content": self.chat_completion_system_role_content + few_shot_additional_instruction}]
+
+      for item in demonstration_instances:
+        demonstration_lst.append({"role": "user", "content": self.__prompt(item, type="zero")["prompt"]})
+        reply= ""
+        if "veracity" in self.prompt_key:
+          reply= item['label']
+        elif "explanation" in self.prompt_key:
+          reply= item['explanation']
+        else:
+          reply= item['label'] + "\n" + item['explanation']          
+        demonstration_lst.append({"role": "assistant", "content": reply})
+      
+      # Create propmt for test instances. Add the demonstration section at the begining of each instances.
+      test_instance["prompt"]= demonstration_lst + [{"role": "user", "content": self.__prompt(test_instance, type="zero")["prompt"]}]
+      
+      return test_instance
+    else:
+      raise Exception("Implement the appropriate structure for the selected PLM!")
 
 
   @backoff.on_exception(backoff.expo, RateLimitError)
@@ -129,47 +199,6 @@ class NLEGeneration():
     return response.json()[0]['generated_text']
 
 
-  def __get_few_shot_demonstration(self, demonstration_instances, test_instances):
-    ''' This function generates the few shot prompt including demonstration examples.
-
-    :param demonstration_instances: The target instances to create the demonstration section of the prompt
-    :type demonstration_instances: list
-    :param test_instances: The target instances to infer by prompt paradigm
-    :type test_instances: list    
-
-    :returns: The input instance list with the few shot prompt including demonstration examples
-    :rtype: list
-    '''
-    
-    if self.selected_plm == "chat_gpt":
-      # create demonestration section for Chat Completions
-      demonstration_lst= [{"role": "system", "content": "You are a helpful assistant that explains the veracity of a claim by considering the context. Instructions: - Only explain veracity of claims by considering just the related context. - Use the provided examples to learn more about explanation."}]
-      for item in demonstration_instances:
-        demonstration_lst.append({"role": "user", "content": self.prompt_template.format(item['summarized_main_text'], item['claim']
-        , item['label'], "")})
-        demonstration_lst.append({"role": "assistant", "content": item['explanation']})
-      
-      # create message with few shot section for Chat Completions
-      for item in test_instances:
-        item["prompt"]= demonstration_lst + [{"role": "user", "content": self.prompt_template.format(item['summarized_main_text'], item['claim']
-        , item['label'], "")}]
-      
-      return test_instances
-
-    # Create the demonstration section of the prompt
-    self.__prompt(demonstration_instances, type="few")
-    demonstration_str= ""
-    for item in demonstration_instances:
-      demonstration_str+= item["prompt"] + "###\n"
-
-    # Create propmt for test instances. Add the demonstration section at the begining of each instances.
-    self.__prompt(test_instances, type="zero")
-    for item in test_instances:
-      item["prompt"]= demonstration_str + item["prompt"]
-    
-    return test_instances
-
-
   def __check_plm(func):
     
     '''
@@ -196,10 +225,7 @@ class NLEGeneration():
 
     :returns: An input instance list with generated explanation added to each instance
     :rtype: list
-    '''
-    
-    # create appropriate prompt
-    self.__prompt(target_instances, type="zero")
+    '''    
     experiments= Experiments()
 
     total_instances= len(target_instances)
@@ -212,6 +238,8 @@ class NLEGeneration():
         continue
 
       log(f"Generating explanation for {index+1}/{total_instances} ...")
+      # create appropriate prompt
+      self.plms[self.selected_plm]["zero_prompt_func"](target_instance)
       target_instance[self.selected_plm]= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
       
       # save each instance result into the DB
@@ -236,9 +264,6 @@ class NLEGeneration():
     :returns: An input instance list with generated explanation added to each instance
     :rtype: list
     '''
-
-    # Create the the prompt for in-context learning
-    self.__get_few_shot_demonstration(demonstration_instances, test_instances)
     experiments= Experiments()
 
     # Call the API
@@ -252,6 +277,8 @@ class NLEGeneration():
         continue
 
       log(f"Generating explanation for {index+1}/{total_instances} ...")      
+      # create appropriate prompt
+      self.plms[self.selected_plm]["few_prompt_func"](demonstration_instances, target_instance)
       target_instance[self.selected_plm]= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
 
       # save each instance result into the DB
