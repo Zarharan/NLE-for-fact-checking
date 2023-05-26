@@ -31,7 +31,12 @@ class NLEGeneration():
     self.prompt_key= prompt_key
     template= prompt_key.split("/")
     self.prompt_template= PROMPT_TEMPLATES['PubHealth'][template[0]][template[1]]
-    self.chat_completion_system_role_content= CHAT_COMPLETION_SYSTEM_ROLE[template[0]]
+    # if a specific template exists
+    if prompt_key in CHAT_COMPLETION_SYSTEM_ROLE.keys():
+      self.chat_completion_system_role_content= CHAT_COMPLETION_SYSTEM_ROLE[prompt_key]
+    else:
+      # use default template
+      self.chat_completion_system_role_content= CHAT_COMPLETION_SYSTEM_ROLE[template[0]]
     self.selected_plm= plm
     self.plm_engine= plm_engine
 
@@ -52,7 +57,8 @@ class NLEGeneration():
     :returns: The input instance with prompts added to it
     :rtype: dict
     '''
-    target_instance['prompt'] = self.prompt_template.format(target_instance['summarized_main_text'], target_instance['claim']
+    target_instance['prompt'] = self.prompt_template.format("" if "bias_checking" in self.prompt_key else target_instance['summarized_main_text']
+      , target_instance['claim']
       , "" if type=="zero" and any(item in self.prompt_key for item in ["veracity", "joint"]) else target_instance['label']
       , "" if type=="zero" or "veracity" in self.prompt_key else target_instance['explanation'])
             

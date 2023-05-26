@@ -24,15 +24,18 @@ PROMPT_TEMPLATES = {
     "PubHealth": {
         "veracity" : {
             "basic": ("Context: {}\nClaim: {}\nWhich of true, false, mixture, and unproven can be the label of the claim by considering the context? {}\n"),
-            "natural": ("Context: {}\nClaim: {}\nTaking into consideration the context of the claim, label the claim as either true, false, mixture, or unproven. {}\n")
+            "natural": ("Context: {}\nClaim: {}\nTaking into consideration the context of the claim, label the claim as either true, false, mixture, or unproven. {}\n"),
+            "bias_checking": ("{}Claim: {}\nWhich of true, false, mixture, and unproven can be the label of the claim? {}\n"),
         },
         "explanation": {
             "basic": ("Context: {}\nClaim: {}\nclaim is {}\nWhy? {}\n"),
-            "natural": ("Context: {}\nClaim: {}\nclaim is {}\nExplain the veracity of the claim by considering just the related context. {}\n")
+            "natural": ("Context: {}\nClaim: {}\nclaim is {}\nExplain the veracity of the claim by considering just the related context. {}\n"),
+            "bias_checking": ("{}Claim: {}\nclaim is {}\nExplain the veracity of the claim. {}\n")
         },
         "joint":{
             "basic": ("Context: {}\nClaim: {}\n Which of true, false, mixture, and unproven can be the label of the claim by considering the context? {}\nWhy? {}\n"),
-            "natural": ("Context: {}\nClaim: {}\n Predict the veracity of the claim and explain your reasoning by considering just the related context. Assign one of true, false, mixture, or unproven as the veracity label of the claim.\n {} \n{}")
+            "natural": ("Context: {}\nClaim: {}\n Predict the veracity of the claim and explain your reasoning by considering just the related context. Assign one of true, false, mixture, or unproven as the veracity label of the claim.\n {} \n{}"),
+            "bias_checking": ("{}Claim: {}\n Predict the veracity of the claim and explain your reasoning. Assign one of true, false, mixture, or unproven as the veracity label of the claim.\n {} \n{}"),
         }
 
     }
@@ -41,7 +44,10 @@ PROMPT_TEMPLATES = {
 CHAT_COMPLETION_SYSTEM_ROLE= {
     "veracity": "You are a helpful assistant that predicts the veracity of a claim by considering the context. Instructions: - Predict the veracity of claims by considering just the related context. - Assign one of True, False, Mixture, or Unproven as the veracity label of the claim.",
     "explanation": "You are a helpful assistant that explains the veracity of a claim by considering the context. Instructions: - Explain the veracity of a claim by considering just the related context.",
-    "joint":"You are a helpful assistant that predicts the veracity of a claim and explains the reason for your prediction by considering the context. Instructions: - Predict the veracity of a claim and explain your reasoning by considering just the related context. - Assign one of True, False, Mixture, or Unproven as the veracity label of the claim."
+    "joint":"You are a helpful assistant that predicts the veracity of a claim and explains the reason for your prediction by considering the context. Instructions: - Predict the veracity of a claim and explain your reasoning by considering just the related context. - Assign one of True, False, Mixture, or Unproven as the veracity label of the claim.",
+    "veracity/bias_checking": "You are a helpful assistant that predicts the veracity of a claim. Instructions: - Predict the veracity of claims. - Assign one of True, False, Mixture, or Unproven as the veracity label of the claim.",
+    "explanation/bias_checking": "You are a helpful assistant that explains the veracity of a claim. Instructions: - Explain the veracity of a claim.",
+    "joint/bias_checking":"You are a helpful assistant that predicts the veracity of a claim and explains the reason for your prediction. Instructions: - Predict the veracity of a claim and explain your reasoning. - Assign one of True, False, Mixture, or Unproven as the veracity label of the claim."
 }
 
 CHATGPT_EXTRA_DESC= {
