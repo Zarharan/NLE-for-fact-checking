@@ -17,6 +17,7 @@ from common.nli_structure import *
 import torch
 from allennlp_models import pretrained
 import logging
+from dotenv import dotenv_values
 
 
 # nltk.download('punkt')
@@ -61,9 +62,11 @@ NLI_LABEL_ID= {
     "contradiction": 2
 }
 
-# ToDo: Remove tokens before making the code publicly available.
-HF_TOKEN= "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"
-OAI_API_KEY = "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"
+
+# take Hugging face and Open AI APIs' secret keys from .env file.
+secret_keys = dotenv_values(".env")
+HF_TOKEN= secret_keys["HF_TOKEN"]
+OAI_API_KEY= secret_keys["OAI_API_KEY"]
 
 # logging
 logger = logging.getLogger(__name__)
