@@ -39,6 +39,7 @@ class PubHealthDataset(Dataset):
         self.data_path= data_path
         self.tokenizer = tokenizer
         self.tokenizer.sep_token= '<|sep|>'
+        self.tokenizer.pad_token = self.tokenizer.eos_token
         self.truncation = truncation
         self.main_text_max_length= main_text_max_length
         self.explanation_max_length = explanation_max_length
@@ -58,14 +59,14 @@ class PubHealthDataset(Dataset):
         path = Path(self.data_path)
         assert path.is_file(), f"Please enter the correct path to the target dataset."
         
-        log("Reading dataset from: " + self.data_set_path)
+        log("Reading dataset from: " + self.data_path)
 
         if ".csv" in self.data_path:
             self.original_df = pd.read_csv(self.data_path)
         elif ".xlsx" in self.data_path:
-            self.original_df = pd.read_excel(self.data_set_path)
+            self.original_df = pd.read_excel(self.data_path)
         elif ".tsv" in self.data_path:
-            temp_set= pd.read_table(data_path)
+            self.original_df= pd.read_table(self.data_path)
         else:
             raise Exception("Implement an appropriate reading method!")
 
@@ -76,6 +77,8 @@ class PubHealthDataset(Dataset):
         self.claim_ids =self.original_df['claim_id']
         self.main_texts = self.original_df['main_text']
         self.veracity_labels = self.original_df['label']
+
+        # The number of explanation tokens in the majority of instances is less than 1000 tokens (in the train and dev set)
         self.explanations = self.original_df['explanation']
 
         # Log the class distribution of veracity
@@ -103,11 +106,11 @@ class PubHealthDataset(Dataset):
         log("Preparing features ...")
         
         self._model_input = {'input_ids':[], 'attention_mask':[]}
-        for claim, main_text, explanation in zip(self.claims.tolist(), self.main_texts.tolist(), self.explanations.tolist()):
-            main_text_tokenized= self.tokenizer(claim + self.tokenizer.pad_token + main_text, return_tensors="pt", truncation=True
-                , max_length= self.main_text_max_length, padding=True)
-            explanation_tokenized= self.tokenizer(self.tokenizer.pad_token + explanation, return_tensors="pt", truncation=True
-                , max_length= self.explanation_max_length, padding=True)
+        for claim, main_text, label, explanation in zip(self.claims.tolist(), self.main_texts.tolist(), self.veracity_labels.tolist(), self.explanations.tolist()):
+            main_text_tokenized= self.tokenizer(claim + self.tokenizer.pad_token + main_text, return_tensors="pt", truncation=self.truncation
+                , max_length= self.main_text_max_length, padding="max_length")
+            explanation_tokenized= self.tokenizer(self.tokenizer.pad_token + label + self.tokenizer.pad_token + explanation, return_tensors="pt", truncation=self.truncation
+                , max_length= self.explanation_max_length, padding="max_length")
             self._model_input["input_ids"].append(torch.concat((main_text_tokenized["input_ids"], explanation_tokenized["input_ids"]), 1))
             self._model_input["attention_mask"].append(torch.concat((main_text_tokenized["attention_mask"], explanation_tokenized["attention_mask"]), 1))
 
