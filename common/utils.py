@@ -416,7 +416,7 @@ class NLEMetrics():
                 
             pred_sents_list= sent_tokenize(pred)
             for sent in pred_sents_list:
-                if self.nli_model.predict_nli(claim, sent) != NLI_LABEL_ID["entailment"]:
+                if self.nli_model.predict_nli(sent, claim) != NLI_LABEL_ID["entailment"]:
                     failed_no+= 1
                     break
         
@@ -444,7 +444,7 @@ class NLEMetrics():
                 
             pred_sents_list= sent_tokenize(pred)
             for sent in pred_sents_list:
-                if self.nli_model.predict_nli(claim, sent) == NLI_LABEL_ID["contradiction"] and claim_label.strip().lower() != "false":
+                if self.nli_model.predict_nli(sent, claim) == NLI_LABEL_ID["contradiction"] and claim_label.strip().lower() != "false":
                     failed_no+= 1
                     break
         
@@ -464,27 +464,24 @@ class NLEMetrics():
         failed_no= 0
         log("Start calculating LC score ...")
         target_count= len(self.pred_list)
-        for index, pred in enumerate(self.pred_list):
-            if (index+1) % 100 == 0:
-                log(f"-------- {index+1}/{target_count} --------")
 
+        def _locally_coherent(pred):
             pred_sents_list= sent_tokenize(pred)
-            sent_counts= len(pred_sents_list)
-            failed_sample= False
-            for sent_index, sent in enumerate(pred_sents_list):
-                for idx in range(sent_index+1,sent_counts):
-                    if self.nli_model.predict_nli(sent, pred_sents_list[idx]) == NLI_LABEL_ID["contradiction"]:
-                        failed_no+= 1
-                        failed_sample= True
-                        break
-                # If only one sentence contradict another one, break and check the next instances
-                if failed_sample:
-                    break
-        
+            for sent1 in pred_sents_list:
+                for sent2 in pred_sents_list:
+                    if sent1 != sent2 and self.nli_model.predict_nli(sent1, sent2) == NLI_LABEL_ID["contradiction"]:
+                        return False
+
+            return True
+
+        for index, pred in enumerate(self.pred_list):
+            if (index + 1) % 100 == 0:
+                log(f"-------- {index + 1}/{target_count} --------")
+            failed_no += int(not _locally_coherent(pred, ))
+
         rounded_score = round(1-(failed_no/target_count), 4)
         log(f"LC Score: {rounded_score}")
         return rounded_score
-
 
     def get_all_metrics(self):
         ''' This function calculate all scores to evaluate the pred_list regarding the target_list.
