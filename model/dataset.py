@@ -109,7 +109,7 @@ class PubHealthDataset(Dataset):
         for claim, main_text, label, explanation in zip(self.claims.tolist(), self.main_texts.tolist(), self.veracity_labels.tolist(), self.explanations.tolist()):
             main_text_tokenized= self.tokenizer(claim + self.tokenizer.pad_token + main_text, return_tensors="pt", truncation=self.truncation
                 , max_length= self.main_text_max_length, padding="max_length", add_special_tokens=True)
-            main_text_len= min(len(claim + self.tokenizer.pad_token + main_text), self.main_text_max_length)
+
             explanation_tokenized= self.tokenizer(self.tokenizer.pad_token + label + self.tokenizer.pad_token + explanation, return_tensors="pt", truncation=self.truncation
                 , max_length= self.explanation_max_length, padding="max_length", add_special_tokens=True)
             context_len= min(len(claim + self.tokenizer.pad_token + main_text), self.main_text_max_length)
