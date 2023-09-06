@@ -15,7 +15,7 @@ import spacy
 import numpy as np
 from common.nli_structure import *
 import torch
-# from allennlp_models import pretrained
+from allennlp_models import pretrained
 import logging
 from dotenv import dotenv_values
 import random
