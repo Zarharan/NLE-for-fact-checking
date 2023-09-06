@@ -15,7 +15,7 @@ import spacy
 import numpy as np
 from common.nli_structure import *
 import torch
-from allennlp_models import pretrained
+# from allennlp_models import pretrained
 import logging
 from dotenv import dotenv_values
 import random
@@ -274,10 +274,10 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=60, t
     """
     for i in range(num):
         sample = data[i]
-        # the length of the target section (label and explanation) of the input text
+        # the length of the context section (claim and text) of the input text
         idx = sample['target_len']
-        context = sample['input_ids'][:idx].tolist()
-        label = sample['input_ids'][idx+1:][:length].tolist()
+        context = sample['input_ids'][0][:idx].tolist()
+        label = sample['input_ids'][0][idx+1:].tolist()
         generated_text = sample_seq(model= model, length= length, context= context, temperature= temperature, top_k= top_k, top_p= top_p, device= device)
         generated_text = generated_text[:, idx:].tolist()
 
@@ -287,16 +287,16 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=60, t
 
         if eval_step==False:
             log('main text: ', '\n\n')
-            log(tokenizer.decode(context[0]), '\n\n')
+            log(tokenizer.decode(context), '\n\n')
             log("generated results", '\n\n')
             log(text, '\n\n')
             log('actual explanation', '\n\n')
             log(tokenizer.decode(label), '\n\n')
         else:
             log('main text: ', '\n\n')
-            log(tokenizer.decode(context[0]), '\n\n')
+            log(tokenizer.decode(context), '\n\n')
             log("generated results", '\n\n')
-            log(text, '\n\n')
+            log(text, '\n\n')    
 
 
 class Summarization():

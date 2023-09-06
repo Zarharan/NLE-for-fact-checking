@@ -109,12 +109,12 @@ class PubHealthDataset(Dataset):
         for claim, main_text, label, explanation in zip(self.claims.tolist(), self.main_texts.tolist(), self.veracity_labels.tolist(), self.explanations.tolist()):
             main_text_tokenized= self.tokenizer(claim + self.tokenizer.pad_token + main_text, return_tensors="pt", truncation=self.truncation
                 , max_length= self.main_text_max_length, padding="max_length", add_special_tokens=True)
-            
+            main_text_len= min(len(claim + self.tokenizer.pad_token + main_text), self.main_text_max_length)
             explanation_tokenized= self.tokenizer(self.tokenizer.pad_token + label + self.tokenizer.pad_token + explanation, return_tensors="pt", truncation=self.truncation
                 , max_length= self.explanation_max_length, padding="max_length", add_special_tokens=True)
-            explanation_len= min(len(self.tokenizer.pad_token + label + self.tokenizer.pad_token + explanation), self.explanation_max_length)
+            context_len= min(len(claim + self.tokenizer.pad_token + main_text), self.main_text_max_length)
             self._model_input["input_ids"].append(torch.concat((main_text_tokenized["input_ids"], explanation_tokenized["input_ids"]), 1))
-            self._model_input["target_len"].append(explanation_len)
+            self._model_input["target_len"].append(context_len)
             self._model_input["attention_mask"].append(torch.concat((main_text_tokenized["attention_mask"], explanation_tokenized["attention_mask"]), 1))
 
         log('Preparing features done!')
