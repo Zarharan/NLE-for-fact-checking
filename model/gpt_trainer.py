@@ -2,7 +2,8 @@ from datetime import datetime
 import os
 import time
 import numpy as np
-from transformers import AutoModelForCausalLM,AdamW, get_linear_schedule_with_warmup
+from transformers import AutoModelForCausalLM, get_linear_schedule_with_warmup
+from torch.optim import AdamW
 from torch.utils.tensorboard import SummaryWriter
 import torch
 from torch.nn import CrossEntropyLoss
