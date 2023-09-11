@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from pathlib import Path
 import pandas as pd
-from common.utils import *
+from model.generation_utils import *
 import torch
 
 

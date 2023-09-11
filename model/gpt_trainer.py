@@ -10,7 +10,7 @@ from torch.nn import CrossEntropyLoss
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tnrange, tqdm
-from common.utils import *
+from model.generation_utils import *
 
 
 # logging

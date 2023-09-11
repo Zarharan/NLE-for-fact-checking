@@ -1,7 +1,7 @@
 import argparse
 from model.gpt_trainer import *
 from model.dataset import PubHealthDataset
-from common.utils import *
+from model.generation_utils import *
 from torch.utils.data import DataLoader
 from pathlib import Path
 
