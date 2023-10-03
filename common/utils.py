@@ -168,7 +168,7 @@ class Summarization():
         self._device= torch.device('cpu')
 
     
-    def get_summary(self, text_for_summary, claim_id):
+    def get_summary(self, text_for_summary, claim_id, claim):
         ''' This function gets a text and returns the summary. 
         If for the input claim, a summary exists in the database, it is returned.
         If not, generates a summary and saves and returns
@@ -177,6 +177,8 @@ class Summarization():
         :type text_for_summary: str
         :param claim_id: The target claim Id 
         :type claim_id: int
+        :param claim: The input claim 
+        :type claim: str
 
         :returns: The generated summary
         :rtype: str
@@ -192,8 +194,13 @@ class Summarization():
         main_text_words= text_for_summary.split()
         tolerance_no= 500
         exceed_no= 4096 - (len(main_text_words) * (4/3) + self.max_tokens + tolerance_no)
+        chat_gpt_model= "gpt-3.5-turbo"
+
         if exceed_no<0:
-            text_for_summary= " ".join(main_text_words[:math.floor(exceed_no)])
+            if self.model_name in ["bart", "lsg_bart", "gpt3"]
+                text_for_summary= " ".join(main_text_words[:math.floor(exceed_no)])
+            else:
+                chat_gpt_model= "gpt-3.5-turbo-16k"
 
         summary = ""
         if self.model_name== "bart":
@@ -202,6 +209,8 @@ class Summarization():
             summary= self.__lsg_bart_large(text_for_summary)
         elif self.model_name == "gpt3":
             summary= self.__gpt3(text_for_summary)
+        elif self.model_name == "chatgpt":
+            summary= self.__chat_gpt(text_for_summary, claim, chat_gpt_model)
 
         # Save summary into the related table for later
         summary_data= SummaryModel(claim_id= claim_id, main_text= text_for_summary
@@ -227,6 +236,36 @@ class Summarization():
             , temperature= self.temperature,max_tokens=self.max_tokens, top_p=1, frequency_penalty=0, presence_penalty=0)
 
         return response.choices[0].text
+
+
+    @backoff.on_exception(backoff.expo, RateLimitError)
+    def __chat_gpt(self, text_for_summary, claim, model="gpt-3.5-turbo"):
+        ''' This function gets a text and claim and summarizes it by generating at most max_tokens by using GPT-3.5-turbo.
+
+        :param text_for_summary: The input text 
+        :type text_for_summary: str
+        :param claim: The input claim 
+        :type text_for_summary: str
+        :param model: The model name
+        :type model: str   
+
+        :returns: The generated summary
+        :rtype: str
+        '''
+
+        openai.api_key= OAI_API_KEY
+        prompt= """Your task is to summarize an article.
+        Extract all important information from the article below, focusing on any aspects that are relevant to the claim below. Limit to {} words. Do not assess the veracity of the claim. Do not explain the veracity of the claim.
+        claim: ```{}```
+        article: ```{}```"""
+
+        messages = [{"role": "user", "content": prompt.format(self.max_tokens, text_for_summary, claim)}]
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=messages,
+            temperature=self.temperature, # this is the degree of randomness of the model's output
+        )
+        return response.choices[0].message["content"]  
 
 
     def __bart_large_cnn(self, text_for_summary, max_length):

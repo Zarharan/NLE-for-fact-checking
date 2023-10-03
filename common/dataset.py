@@ -141,7 +141,7 @@ class PubHealthDataset():
 
     if summarization_obj:
       for sample in self.k_rand_clean_examples:
-        sample["summarized_main_text"]= summarization_obj.get_summary(sample["main_text"], sample["claim_id"])
+        sample["summarized_main_text"]= summarization_obj.get_summary(sample["main_text"], sample["claim_id"], sample["claim"])
 
       print(f"Successfully summarized the main text of the instances read from {target_set}.")
 

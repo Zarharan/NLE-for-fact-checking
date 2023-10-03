@@ -42,7 +42,7 @@ def main():
     , default='test', choices=['train', 'val', 'test'])
     parser.add_argument("-summarize", "--summarize"
     , help = "Whether summarize the main text of the news or not"
-    , default='false', choices=['false', 'gpt3', 'bart', 'lsg_bart'])
+    , default='false', choices=['false', 'gpt3', 'bart', 'lsg_bart', 'chatgpt'])
     parser.add_argument("-summarization_model_path", "--summarization_model_path"
     , help = "The path of weights of the target model to generate summary (except GPT-3 model)"
     , default='data/models/lsg_bart', type=str)
