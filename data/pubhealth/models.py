@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Text, ForeignKey, Boolean, DateTime
+from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import UniqueConstraint
@@ -23,7 +24,7 @@ class SummaryModel(Base):
 
     id = Column(Integer, primary_key = True)
     claim_id = Column(Integer, nullable=False)
-    main_text = Column(Text, nullable=False) # Main text of an instance
+    main_text = Column(LONGTEXT, nullable=False) # Main text of an instance
     summary = Column(Text, nullable=False) # summarized text of the main text
     model_name= Column(String(32), nullable=False) # the model name that summarized the main text
     
