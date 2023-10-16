@@ -24,19 +24,22 @@ from dotenv import dotenv_values
 PROMPT_TEMPLATES = {
     "PubHealth": {
         "veracity" : {
-            "basic": ("Context: {}\nClaim: {}\nWhich of true, false, mixture, and unproven can be the label of the claim by considering the context? {}\n"),
-            "natural": ("Context: {}\nClaim: {}\nTaking into consideration the context of the claim, label the claim as either true, false, mixture, or unproven. {}\n"),
-            "bias_checking": ("{}Claim: {}\nWhich of true, false, mixture, and unproven can be the label of the claim? {}\n"),
+            "basic": ("Context: {0}\nClaim: {1}\nWhich of true, false, mixture, and unproven can be the label of the claim by considering the context? {2}\n"),
+            "natural": ("Context: {0}\nClaim: {1}\nTaking into consideration the context of the claim, label the claim as either true, false, mixture, or unproven. {2}\n"),
+            "claude_suggestion": ("Context: {0}\nClaim: {1}\nBased only on the context, categorize the claim as:\n- True (supported by context)\n- False (contradicted by context)\n- Mixture (partially supported/contradicted)\n- Unproven (not enough info)\n{2}"),
+            "bias_checking": ("{0}Claim: {1}\nWhich of true, false, mixture, and unproven can be the label of the claim? {2}\n"),
         },
         "explanation": {
-            "basic": ("Context: {}\nClaim: {}\nclaim is {}\nWhy? {}\n"),
-            "natural": ("Context: {}\nClaim: {}\nclaim is {}\nExplain the veracity of the claim by considering just the related context. {}\n"),
-            "bias_checking": ("{}Claim: {}\nclaim is {}\nExplain the veracity of the claim. {}\n")
+            "basic": ("Context: {0}\nClaim: {1}\nclaim is {2}\nWhy? {3}\n"),
+            "natural": ("Context: {0}\nClaim: {1}\nclaim is {2}\nExplain the veracity of the claim by considering just the related context. {3}\n"),
+            "claude_suggestion": ("Context: {0}\nClaim: {1}\nThe claim veracity: {2}.\nUsing only the context provided, explain why the claim veracity is {2}.\n{3}"),
+            "bias_checking": ("{0}Claim: {1}\nclaim is {2}\nExplain the veracity of the claim. {3}\n")
         },
         "joint":{
-            "basic": ("Context: {}\nClaim: {}\n Which of true, false, mixture, and unproven can be the label of the claim by considering the context? {}\nWhy? {}\n"),
-            "natural": ("Context: {}\nClaim: {}\n Predict the veracity of the claim and explain your reasoning by considering just the related context. Assign one of true, false, mixture, or unproven as the veracity label of the claim.\n {} \n{}"),
-            "bias_checking": ("{}Claim: {}\n Predict the veracity of the claim and explain your reasoning. Assign one of true, false, mixture, or unproven as the veracity label of the claim.\n {} \n{}"),
+            "basic": ("Context: {0}\nClaim: {1}\n Which of true, false, mixture, and unproven can be the label of the claim by considering the context? {2}\nWhy? {3}\n"),
+            "natural": ("Context: {0}\nClaim: {1}\n Predict the veracity of the claim and explain your reasoning by considering just the related context. Assign one of true, false, mixture, or unproven as the veracity label of the claim.\n {2} \n{3}"),
+            "claude_suggestion": ("Context: {0}\nClaim: {1}\nBased only on the context, categorize the claim as:\n- True (supported by context)\n- False (contradicted by context)\n- Mixture (partially supported/contradicted)\n- Unproven (not enough info)\nAnd explain your reasoning.\nPredicted veracity:{2}\nExplanation:{3}"),
+            "bias_checking": ("{0}Claim: {1}\n Predict the veracity of the claim and explain your reasoning. Assign one of true, false, mixture, or unproven as the veracity label of the claim.\n {2} \n{3}"),
         }
 
     }
