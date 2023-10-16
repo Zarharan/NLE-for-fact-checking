@@ -67,6 +67,15 @@ class PubHealthDataset():
 
     # Remove instances that include null values
     temp_set = temp_set.dropna()
+
+    # Filter out useless instances
+    drop_id_lst= []
+    for index, row in temp_set.iterrows():
+      text, claim, label = row["main_text"], row["claim"], row["label"]
+      if len(str(claim))< 25 or len(str(claim))>400 or (label.strip() not in ['unproven','true','false','mixture']) or len(text.split()) < 10:
+        drop_id_lst.append(index)
+
+    temp_set= temp_set.drop(drop_id_lst)
     
     if set_title== "train":
       self.df_orginal_trainset= temp_set
