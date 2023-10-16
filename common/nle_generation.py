@@ -43,6 +43,7 @@ class NLEGeneration():
     
     self.plms= {"gpt3": {"api_func": self.__openai_query, "engine": "text-davinci-003", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
       , "chat_gpt": {"api_func": self.__openai_chat_query, "engine": "gpt-3.5-turbo", "zero_prompt_func": self.__chat_based_zero_shot_structure, "few_prompt_func": self.__chat_based_few_shot_structure}
+      , "gpt4": {"api_func": self.__openai_chat_query, "engine": "gpt-4", "zero_prompt_func": self.__chat_based_zero_shot_structure, "few_prompt_func": self.__chat_based_few_shot_structure}
       , "gptj": {"api_func": self.__hf_models_query, "model_name": "EleutherAI/gpt-j-6B", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}}
 
 

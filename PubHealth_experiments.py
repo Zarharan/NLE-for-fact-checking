@@ -56,8 +56,8 @@ def main():
     , default='explanation/basic', choices=['explanation/basic', 'veracity/basic', 'explanation/natural', 'veracity/natural', 'joint/basic', 'joint/natural', 'explanation/bias_checking', 'veracity/bias_checking', 'joint/bias_checking'])
     parser.add_argument("-prompt_type", "--prompt_type", help = "zero shot or few shot"
     , default='zero', choices=['zero', 'few'])
-    parser.add_argument("-plm", "--plm", help = "gpt3, chat_gpt(gpt-3.5-turbo), or gptj"
-    , default='gpt3', choices=['gpt3','chat_gpt','gptj'])
+    parser.add_argument("-plm", "--plm", help = "gpt3, chat_gpt(gpt-3.5-turbo), gpt4, or gptj"
+    , default='gpt3', choices=['gpt3','chat_gpt', 'gpt4','gptj'])
     parser.add_argument("-plm_engine", "--plm_engine", help = "For chat completion: gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301. And for completion: text-davinci-003, text-davinci-002, text-curie-001, text-babbage-001, text-ada-001"
     , default='', choices=['','gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314', 'gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'text-davinci-003', 'text-davinci-002', 'text-curie-001', 'text-babbage-001', 'text-ada-001'])
     parser.add_argument("-nle_temperature", "--nle_temperature", help = "To set the randomness of generated explanation."

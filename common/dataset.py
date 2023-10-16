@@ -63,6 +63,11 @@ class PubHealthDataset():
     assert path.is_file(), f"Please enter the correct path to the {set_title} set."
 
     temp_set= pd.read_table(data_path)
+    temp_set= temp_set.filter(items=['claim', 'claim_id', 'main_text', 'label', 'explanation'])
+
+    # Remove instances that include null values
+    temp_set = temp_set.dropna()
+    
     if set_title== "train":
       self.df_orginal_trainset= temp_set
     elif set_title== "val":
