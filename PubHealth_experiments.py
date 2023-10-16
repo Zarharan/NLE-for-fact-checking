@@ -53,7 +53,7 @@ def main():
     parser.add_argument("-seed", "--seed", help = "seed for random function. Pass None for select different instances randomly."
     , default=313, type= int)
     parser.add_argument("-prompt_template", "--prompt_template", help = "The target template to create prompt"
-    , default='explanation/basic', choices=['explanation/basic', 'veracity/basic', 'explanation/natural', 'veracity/natural', 'joint/basic', 'joint/natural', 'explanation/bias_checking', 'veracity/bias_checking', 'joint/bias_checking'])
+    , default='explanation/claude_suggestion', choices=['explanation/basic', 'veracity/basic', 'explanation/natural', 'veracity/natural', 'joint/basic', 'joint/natural', 'explanation/bias_checking', 'veracity/bias_checking', 'joint/bias_checking', 'explanation/claude_suggestion', 'veracity/claude_suggestion', 'joint/claude_suggestion'])
     parser.add_argument("-prompt_type", "--prompt_type", help = "zero shot or few shot"
     , default='zero', choices=['zero', 'few'])
     parser.add_argument("-plm", "--plm", help = "gpt3, chat_gpt(gpt-3.5-turbo), gpt4, or gptj"
