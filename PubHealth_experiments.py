@@ -53,13 +53,13 @@ def main():
     parser.add_argument("-seed", "--seed", help = "seed for random function. Pass None for select different instances randomly."
     , default=313, type= int)
     parser.add_argument("-prompt_template", "--prompt_template", help = "The target template to create prompt"
-    , default='explanation/claude_suggestion', choices=['explanation/basic', 'veracity/basic', 'explanation/natural', 'veracity/natural', 'joint/basic', 'joint/natural', 'explanation/bias_checking', 'veracity/bias_checking', 'joint/bias_checking', 'explanation/claude_suggestion', 'veracity/claude_suggestion', 'joint/claude_suggestion'])
+    , default='explanation/claude_suggestion', choices=['explanation/basic', 'veracity/basic', 'explanation/natural', 'veracity/natural', 'joint/basic', 'joint/natural', 'explanation/bias_checking', 'veracity/bias_checking', 'joint/bias_checking', 'explanation/claude_suggestion', 'veracity/claude_suggestion', 'joint/claude_suggestion', 'veracity/instruction_based', 'explanation/instruction_based', 'joint/instruction_based'])
     parser.add_argument("-prompt_type", "--prompt_type", help = "zero shot or few shot"
     , default='zero', choices=['zero', 'few'])
-    parser.add_argument("-plm", "--plm", help = "gpt3, chat_gpt(gpt-3.5-turbo), gpt4, or gptj"
-    , default='gpt3', choices=['gpt3','chat_gpt', 'gpt4','gptj'])
+    parser.add_argument("-plm", "--plm", help = "gpt3, chat_gpt(gpt-3.5-turbo), gpt4, vicuna, mistral, or gptj"
+    , default='gpt3', choices=['gpt3','chat_gpt', 'gpt4','gptj', 'vicuna', 'mistral'])
     parser.add_argument("-plm_engine", "--plm_engine", help = "For chat completion: gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301. And for completion: text-davinci-003, text-davinci-002, text-curie-001, text-babbage-001, text-ada-001"
-    , default='', choices=['','gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314', 'gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'text-davinci-003', 'text-davinci-002', 'text-curie-001', 'text-babbage-001', 'text-ada-001'])
+    , default='', choices=['','gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314', 'gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'text-davinci-003', 'text-davinci-002', 'text-curie-001', 'text-babbage-001', 'text-ada-001', 'mistralai/Mistral-7B-v0.1', 'lmsys/vicuna-13b-v1.5', 'mistralai/Mistral-7B-Instruct-v0.1', 'lmsys/vicuna-33b-v1.3'])
     parser.add_argument("-nle_temperature", "--nle_temperature", help = "To set the randomness of generated explanation."
     , default=0.5, type= float)
     parser.add_argument("-add_chatgpt_prompt", "--add_chatgpt_prompt", help = "Add another coloumn to the result file for ChatGPT prompt."

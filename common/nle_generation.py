@@ -40,11 +40,20 @@ class NLEGeneration():
     self.selected_plm= plm
     self.plm_engine= plm_engine
 
+    self._target_model= None 
+    self._target_tokenizer= None
+    self._device= torch.device('cpu')
+    if torch.cuda.is_available():
+      self._device = torch.device('cuda')
     
     self.plms= {"gpt3": {"api_func": self.__openai_query, "engine": "text-davinci-003", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
       , "chat_gpt": {"api_func": self.__openai_chat_query, "engine": "gpt-3.5-turbo", "zero_prompt_func": self.__chat_based_zero_shot_structure, "few_prompt_func": self.__chat_based_few_shot_structure}
       , "gpt4": {"api_func": self.__openai_chat_query, "engine": "gpt-4", "zero_prompt_func": self.__chat_based_zero_shot_structure, "few_prompt_func": self.__chat_based_few_shot_structure}
+      , "vicuna": {"api_func": self.__open_source_instruction_based_lm, "engine": "lmsys/vicuna-13b-v1.5", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
+      , "mistral": {"api_func": self.__open_source_instruction_based_lm, "engine": "mistralai/Mistral-7B-v0.1", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
       , "gptj": {"api_func": self.__hf_models_query, "model_name": "EleutherAI/gpt-j-6B", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}}
+
+    self._cgat_based_models= ["chat_gpt", "gpt4"]
 
 
   def __prompt(self, target_instance, type="zero"):
@@ -97,7 +106,7 @@ class NLEGeneration():
     :returns: The input instance with prompts added to it
     :rtype: dict
     '''    
-    if self.selected_plm == "chat_gpt":
+    if self.selected_plm in self._cgat_based_models:
       # create instruction section for Chat Completions
       instruction= [{"role": "system", "content": self.chat_completion_system_role_content}]
       
@@ -119,7 +128,7 @@ class NLEGeneration():
     :returns: The input instance with the few shot prompt including demonstration examples
     :rtype: dict
     '''
-    if self.selected_plm == "chat_gpt":
+    if self.selected_plm in self._cgat_based_models:
       # create demonestration section for Chat Completions
       few_shot_additional_instruction= " - Use the provided examples to learn more about explanation."
       demonstration_lst= [{"role": "system", "content": self.chat_completion_system_role_content + few_shot_additional_instruction}]
@@ -204,6 +213,27 @@ class NLEGeneration():
     response = requests.post(API_URL, headers=headers, json= body)
 
     return response.json()[0]['generated_text']
+
+
+  def __open_source_instruction_based_lm(self, prompt):
+    ''' This function generate a text as response by using the model, tokenizer, and given prompt
+
+    :param prompt: The target prompt 
+    :type prompt: str
+
+    :returns: The generated text
+    :rtype: str
+    '''
+
+    if self._target_model is None or self._target_tokenizer is None: 
+      self._target_model = AutoModelForCausalLM.from_pretrained(self.plms[self.selected_plm]["engine"])
+      self._target_tokenizer = LlamaTokenizer.from_pretrained(self.plms[self.selected_plm]["engine"])
+      self._target_model = self._target_model.to(self._device)
+
+    inputs = self._target_tokenizer (prompt, return_tensors="pt")
+
+    outputs = self._target_model.generate(input_ids=sample["input_ids"].to(self._device), max_new_tokens=self.max_tokens, temperature= self.temperature)
+    return self._target_tokenizer.batch_decode(outputs.detach().cpu().numpy(), skip_special_tokens=True)[0]
 
 
   def __check_plm(func):

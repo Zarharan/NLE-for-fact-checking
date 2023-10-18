@@ -85,7 +85,7 @@ def report_veracity_metrics(file_path, pred_col_title, target_col_title):
     '''
 
     pred_list, target_list = get_pred_target_colms(file_path, pred_col_title, target_col_title)
-    pred_list= [label.lower() for label in pred_list]
+    pred_list= [label.lower().split()[0] for label in pred_list]
     labels=['true', 'false', 'mixture', 'unproven']
 
     metrics_result= {"acc": accuracy_score(pred_list, target_list)

@@ -27,6 +27,14 @@ PROMPT_TEMPLATES = {
             "basic": ("Context: {0}\nClaim: {1}\nWhich of true, false, mixture, and unproven can be the label of the claim by considering the context? {2}\n"),
             "natural": ("Context: {0}\nClaim: {1}\nTaking into consideration the context of the claim, label the claim as either true, false, mixture, or unproven. {2}\n"),
             "claude_suggestion": ("Context: {0}\nClaim: {1}\nBased only on the context, categorize the claim as:\n- True (supported by context)\n- False (contradicted by context)\n- Mixture (partially supported/contradicted)\n- Unproven (not enough info)\n{2}"),
+            "instruction_based": ("""### Instruction:\nUse the Task below and the Input given to write the Response, which is a veracity label prediction that can solve the Task.
+            \n\n### Task:\nBased only on the context, categorize the claim as:
+            True (supported by context)
+            False (contradicted by context)
+            Mixture (partially supported/contradicted)
+            Unproven (not enough info)
+            Only generate a single word as response.
+            \n\n### Input:\nContext: {0}\nClaim: {1}\n\n### Response:\n{2}"""),
             "bias_checking": ("{0}Claim: {1}\nWhich of true, false, mixture, and unproven can be the label of the claim? {2}\n"),
         },
         "explanation": {
