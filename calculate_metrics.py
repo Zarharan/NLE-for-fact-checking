@@ -70,7 +70,7 @@ def report_nle_metrics(file_path, pred_col_title, target_col_title, metrics_obj,
     return target_metric_result
 
 
-def report_veracity_metrics(file_path, pred_col_title, target_col_title):
+def report_veracity_metrics(file_path, pred_col_title, target_col_title, veracity_average_method):
     ''' This function read a file and report evaluation metrics for veracity classification task.
 
     :param file_path: The path to the file to report metrics for it
@@ -79,6 +79,8 @@ def report_veracity_metrics(file_path, pred_col_title, target_col_title):
     :type pred_col_title: str
     :param target_col_title: The title of target (ground truth) column to report metrics regarding it
     :type target_col_title: str
+    :param veracity_average_method: The average method fot reporting recal, precision, and F1.
+    :type veracity_average_method: str
     
     :returns: The calculated metrics
     :rtype: dict
@@ -89,9 +91,9 @@ def report_veracity_metrics(file_path, pred_col_title, target_col_title):
     labels=['true', 'false', 'mixture', 'unproven']
 
     metrics_result= {"acc": accuracy_score(pred_list, target_list)
-        , "pre": precision_score(pred_list, target_list, average='weighted', labels=labels)
-        , "rec": recall_score(pred_list, target_list, average='weighted', labels=labels)
-        , "f1": f1_score(pred_list, target_list, average='weighted', labels=labels)
+        , "pre": precision_score(pred_list, target_list, average=veracity_average_method, labels=labels)
+        , "rec": recall_score(pred_list, target_list, average=veracity_average_method, labels=labels)
+        , "f1": f1_score(pred_list, target_list, average=veracity_average_method, labels=labels)
         , "confmat": confusion_matrix(pred_list, target_list, labels=labels)}
 
     return metrics_result
@@ -118,6 +120,9 @@ def main():
     parser.add_argument("-task_type", "--task_type"
         , help = "Report metrics for the veracity prediction, the explanation generation or the joint model", default="explanation"
         , choices=['explanation', 'veracity', 'joint'], type= str)
+    parser.add_argument("-veracity_average_method", "--veracity_average_method"
+        , help = "The average method fot reporting recal, precision, and F1.", default="macro"
+        , choices=['macro', 'micro', 'weighted'], type= str)        
     parser.add_argument("-nli_model_name", "--nli_model_name"
         , help = " A model name to calculate the SGC and WGC scores", default="roberta_large_snli"
         , choices=['roberta_large_snli', 'allennlp_nli_models'], type= str)
@@ -149,7 +154,7 @@ def main():
         log(f"Calculating metrics for {file_name}:")
 
         if args.task_type=="veracity":
-            log(report_veracity_metrics(file_name, args.pred_col_title, args.target_col_title))
+            log(report_veracity_metrics(file_name, args.pred_col_title, args.target_col_title, args.veracity_average_method))
         elif args.task_type=="explanation":
             report_nle_metrics(file_name, args.pred_col_title, args.target_col_title, nle_metrics, args.target_metric)
         else: # joint task
