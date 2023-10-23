@@ -3,6 +3,7 @@ import json
 from openai.error import RateLimitError
 import backoff
 from data.pubhealth.models import *
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, LlamaTokenizer
 
 
 class NLEGeneration():
@@ -232,7 +233,7 @@ class NLEGeneration():
 
     inputs = self._target_tokenizer (prompt, return_tensors="pt")
 
-    outputs = self._target_model.generate(input_ids=sample["input_ids"].to(self._device), max_new_tokens=self.max_tokens, temperature= self.temperature)
+    outputs = self._target_model.generate(input_ids=inputs["input_ids"].to(self._device), max_new_tokens=self.max_tokens, temperature= self.temperature)
     return self._target_tokenizer.batch_decode(outputs.detach().cpu().numpy(), skip_special_tokens=True)[0]
 
 
