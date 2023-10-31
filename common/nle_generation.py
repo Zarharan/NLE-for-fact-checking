@@ -52,6 +52,8 @@ class NLEGeneration():
       , "gpt4": {"api_func": self.__openai_chat_query, "engine": "gpt-4", "zero_prompt_func": self.__chat_based_zero_shot_structure, "few_prompt_func": self.__chat_based_few_shot_structure}
       , "vicuna": {"api_func": self.__open_source_instruction_based_lm, "engine": "lmsys/vicuna-13b-v1.5", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
       , "mistral": {"api_func": self.__open_source_instruction_based_lm, "engine": "mistralai/Mistral-7B-v0.1", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
+      , "falcon": {"api_func": self.__open_source_instruction_based_lm, "engine": "tiiuae/falcon-40b", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
+      , "llama": {"api_func": self.__open_source_instruction_based_lm, "engine": "meta-llama/Llama-2-70b-hf", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
       , "gptj": {"api_func": self.__hf_models_query, "model_name": "EleutherAI/gpt-j-6B", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}}
 
     self._cgat_based_models= ["chat_gpt", "gpt4"]
@@ -90,7 +92,7 @@ class NLEGeneration():
     # Create the demonstration section of the prompt    
     demonstration_str= ""
     for item in demonstration_instances:
-      demonstration_str+= self.__prompt(item, type="few")["prompt"] + "###\n"
+      demonstration_str+= self.__prompt(item, type="few")["prompt"] + "\n###\n"
 
     # Create propmt for test instances. Add the demonstration section at the begining of each instances.
     test_instance["prompt"]= demonstration_str + self.__prompt(test_instance, type="zero")["prompt"]
@@ -165,7 +167,8 @@ class NLEGeneration():
     '''
 
     openai.api_key= OAI_API_KEY
-    response = openai.Completion.create(engine= self.plms["gpt3"]["engine"] if self.plm_engine=='' else self.plm_engine
+    assert self.plm_engine!= "", "Set plm_engine!"
+    response = openai.Completion.create(engine= self.plm_engine
       , prompt= prompt, temperature= self.temperature , max_tokens= self.max_tokens
       , top_p=1, frequency_penalty=0
       , presence_penalty=0)
@@ -185,7 +188,8 @@ class NLEGeneration():
     '''
 
     openai.api_key= OAI_API_KEY
-    response = openai.ChatCompletion.create(model= self.plms["chat_gpt"]["engine"] if self.plm_engine=='' else self.plm_engine
+    assert self.plm_engine!= "", "Set plm_engine!"
+    response = openai.ChatCompletion.create(model= self.plm_engine
     , messages= prompt, temperature= self.temperature , max_tokens= self.max_tokens, top_p=1
     , frequency_penalty=0, presence_penalty=0)
     
@@ -227,14 +231,16 @@ class NLEGeneration():
     '''
 
     if self._target_model is None or self._target_tokenizer is None: 
-      self._target_model = AutoModelForCausalLM.from_pretrained(self.plms[self.selected_plm]["engine"])
-      self._target_tokenizer = LlamaTokenizer.from_pretrained(self.plms[self.selected_plm]["engine"])
+      self._target_model = AutoModelForCausalLM.from_pretrained(self.plms[self.selected_plm]["engine"], token=HF_TOKEN)
+      self._target_tokenizer = AutoTokenizer.from_pretrained(self.plms[self.selected_plm]["engine"], token=HF_TOKEN)
       self._target_model = self._target_model.to(self._device)
 
     inputs = self._target_tokenizer (prompt, return_tensors="pt")
+    input_len = len(prompt)
 
-    outputs = self._target_model.generate(input_ids=inputs["input_ids"].to(self._device), max_new_tokens=self.max_tokens, temperature= self.temperature)
-    return self._target_tokenizer.batch_decode(outputs.detach().cpu().numpy(), skip_special_tokens=True)[0]
+    outputs = self._target_model.generate(input_ids=inputs["input_ids"].to(self._device), max_new_tokens=self.max_tokens, temperature= self.temperature, do_sample= True)
+    result= self._target_tokenizer.batch_decode(outputs.detach().cpu().numpy(), skip_special_tokens=True)[0]
+    return result[input_len-1:]
 
 
   def __check_plm(func):

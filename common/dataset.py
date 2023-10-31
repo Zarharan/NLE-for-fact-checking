@@ -31,6 +31,9 @@ class PubHealthDataset():
 
   def __init__(self, train_path, val_path="", test_path= ""):    
 
+    self.all_available_sets= ['train', 'val', 'test']
+    self.label_space= ['unproven','true','false','mixture']
+
     self.df_orginal_trainset= self.read_dataset(train_path, 'train')
     self.df_orginal_testset= None
     self.df_orginal_valset= None
@@ -41,9 +44,7 @@ class PubHealthDataset():
     if test_path is not None and len(test_path)>0:
       self.df_orginal_testset = self.read_dataset(test_path, 'test')
 
-    self.label_space= ['unproven','true','false','mixture']
     self.pre_processor= Preprocessor()
-    self.all_available_sets= ['train', 'val', 'test']
 
 
   def read_dataset(self, data_path, set_title):
@@ -58,7 +59,7 @@ class PubHealthDataset():
     :rtype: object
     '''
 
-    assert set_title in ['train', 'val', 'test'], f"Acceptable values for set_title are {all_available_sets}."
+    assert set_title in self.all_available_sets, f"Acceptable values for set_title are {self.all_available_sets}."
     path = Path(data_path)
     assert path.is_file(), f"Please enter the correct path to the {set_title} set."
 
@@ -108,7 +109,7 @@ class PubHealthDataset():
     :rtype: list
     '''
 
-    assert target_set in ['train', 'val', 'test'], f"Acceptable values for target_set are {all_available_sets}."
+    assert target_set in self.all_available_sets, f"Acceptable values for target_set are {self.all_available_sets}."
 
     if target_set== "train":
       assert self.df_orginal_trainset is not None, "Please read the train set at first!"

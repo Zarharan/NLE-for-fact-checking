@@ -44,7 +44,7 @@ def main():
     , help = "Whether summarize the main text of the news or not"
     , default='false', choices=['false', 'gpt3', 'bart', 'lsg_bart', 'chatgpt'])
     parser.add_argument("-summarization_model_path", "--summarization_model_path"
-    , help = "The path of weights of the target model to generate summary (except GPT-3 model)"
+    , help = "The path of weights of the target model to generate summary (except api-based models)"
     , default='data/models/lsg_bart', type=str)
     parser.add_argument("-summarization_max_token", "--summarization_max_token", help = "The max number of tokens for generated summary."
     , default=200, type= int)
@@ -57,9 +57,9 @@ def main():
     parser.add_argument("-prompt_type", "--prompt_type", help = "zero shot or few shot"
     , default='zero', choices=['zero', 'few'])
     parser.add_argument("-plm", "--plm", help = "gpt3, chat_gpt(gpt-3.5-turbo), gpt4, vicuna, mistral, or gptj"
-    , default='gpt3', choices=['gpt3','chat_gpt', 'gpt4','gptj', 'vicuna', 'mistral'])
+    , default='gpt3', choices=['gpt3','chat_gpt', 'gpt4','gptj', 'vicuna', 'mistral', 'falcon', 'llama'])
     parser.add_argument("-plm_engine", "--plm_engine", help = "For chat completion: gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301. And for completion: text-davinci-003, text-davinci-002, text-curie-001, text-babbage-001, text-ada-001"
-    , default='', choices=['','gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314', 'gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'text-davinci-003', 'text-davinci-002', 'text-curie-001', 'text-babbage-001', 'text-ada-001', 'mistralai/Mistral-7B-v0.1', 'lmsys/vicuna-13b-v1.5', 'mistralai/Mistral-7B-Instruct-v0.1', 'lmsys/vicuna-33b-v1.3'])
+    , default='', choices=['','gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314', 'gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'text-davinci-003', 'text-davinci-002', 'text-curie-001', 'text-babbage-001', 'text-ada-001', 'mistralai/Mistral-7B-v0.1', 'lmsys/vicuna-13b-v1.5', 'mistralai/Mistral-7B-Instruct-v0.1', 'lmsys/vicuna-33b-v1.3', 'tiiuae/falcon-40b', 'meta-llama/Llama-2-13b-hf'])
     parser.add_argument("-nle_temperature", "--nle_temperature", help = "To set the randomness of generated explanation."
     , default=0.5, type= float)
     parser.add_argument("-add_chatgpt_prompt", "--add_chatgpt_prompt", help = "Add another coloumn to the result file for ChatGPT prompt."
