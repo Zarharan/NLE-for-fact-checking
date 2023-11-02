@@ -139,10 +139,10 @@ class PubHealthDataset():
     # select k random instances regardless of class
     if k_rand_instance>0:
       if k_per_class> 0:
-        rand_instances_df= pd.concat([temp_df[~temp_df["claim_id"].isin(rand_instances_df['claim_id'])].sample(n=k_rand_instance, random_state= random_seed)
+        rand_instances_df= pd.concat([temp_df[~temp_df["claim_id"].isin(rand_instances_df['claim_id'])].sample(n=k_rand_instance, random_state= random_seed, weights = temp_df.groupby('label')['label'].transform('count'))
           ,rand_instances_df])
       else:
-        rand_instances_df= temp_df.sample(n=k_rand_instance, random_state= random_seed)    
+        rand_instances_df= temp_df.sample(n=k_rand_instance, random_state= random_seed, weights = temp_df.groupby('label')['label'].transform('count'))    
 
     for index, row in rand_instances_df.iterrows():
       main_text= self.pre_processor.clean_text(row['main_text'])
