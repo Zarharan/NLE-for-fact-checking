@@ -87,7 +87,14 @@ def report_veracity_metrics(file_path, pred_col_title, target_col_title, veracit
     '''
 
     pred_list, target_list = get_pred_target_colms(file_path, pred_col_title, target_col_title)
-    pred_list= [label.lower().split()[0] for label in pred_list]
+
+    def _clean_generated_labels(label):
+      label= label.strip().replace("#","").replace("\n","").lower().split()
+      if len(label)>0:
+        return label[0]
+      return "other"
+
+    pred_list = list(map(_clean_generated_labels, pred_list))
     labels=['true', 'false', 'mixture', 'unproven']
 
     metrics_result= {"acc": accuracy_score(pred_list, target_list)

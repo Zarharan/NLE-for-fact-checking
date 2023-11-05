@@ -46,14 +46,16 @@ class NLEGeneration():
     self._device= torch.device('cpu')
     if torch.cuda.is_available():
       self._device = torch.device('cuda')
+      log("-"*50, "Cuda is available!", "-"*50)
+      log("-"*45, "device_count:",torch.cuda.device_count(), "-"*45)      
     
     self.plms= {"gpt3": {"api_func": self.__openai_query, "engine": "text-davinci-003", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
       , "chat_gpt": {"api_func": self.__openai_chat_query, "engine": "gpt-3.5-turbo", "zero_prompt_func": self.__chat_based_zero_shot_structure, "few_prompt_func": self.__chat_based_few_shot_structure}
       , "gpt4": {"api_func": self.__openai_chat_query, "engine": "gpt-4", "zero_prompt_func": self.__chat_based_zero_shot_structure, "few_prompt_func": self.__chat_based_few_shot_structure}
-      , "vicuna": {"api_func": self.__open_source_instruction_based_lm, "engine": "lmsys/vicuna-13b-v1.5", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
-      , "mistral": {"api_func": self.__open_source_instruction_based_lm, "engine": "mistralai/Mistral-7B-v0.1", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
-      , "falcon": {"api_func": self.__open_source_instruction_based_lm, "engine": "tiiuae/falcon-40b", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
-      , "llama": {"api_func": self.__open_source_instruction_based_lm, "engine": "meta-llama/Llama-2-70b-hf", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
+      , "vicuna": {"api_func": self.__open_source_instruction_based_lm, "load_in_8bit":False, "engine": "lmsys/vicuna-13b-v1.5-16k", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
+      , "mistral": {"api_func": self.__open_source_instruction_based_lm, "load_in_8bit":False, "engine": "mistralai/Mistral-7B-v0.1", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
+      , "falcon": {"api_func": self.__open_source_instruction_based_lm, "load_in_8bit":True, "engine": "tiiuae/falcon-180B", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
+      , "llama": {"api_func": self.__open_source_instruction_based_lm, "load_in_8bit":False, "engine": "meta-llama/Llama-2-70b-hf", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}
       , "gptj": {"api_func": self.__hf_models_query, "model_name": "EleutherAI/gpt-j-6B", "zero_prompt_func": self.__prompt, "few_prompt_func": self.__general_few_shot_structure}}
 
     self._cgat_based_models= ["chat_gpt", "gpt4"]
@@ -230,16 +232,26 @@ class NLEGeneration():
     :rtype: str
     '''
 
-    if self._target_model is None or self._target_tokenizer is None: 
-      self._target_model = AutoModelForCausalLM.from_pretrained(self.plms[self.selected_plm]["engine"], token=HF_TOKEN)
-      self._target_tokenizer = AutoTokenizer.from_pretrained(self.plms[self.selected_plm]["engine"], token=HF_TOKEN)
-      self._target_model = self._target_model.to(self._device)
+    if self.plm_engine== "":
+      self.plm_engine= self.plms[self.selected_plm]["engine"]
+    
+    log(f"Using {self.plm_engine} for the task!")
+
+    if self._target_model is None: 
+      self._target_model = AutoModelForCausalLM.from_pretrained(self.plm_engine, token=HF_TOKEN, device_map="auto", load_in_8bit=self.plms[self.selected_plm]["load_in_8bit"])
+    
+    if self._target_tokenizer is None: 
+      self._target_tokenizer = AutoTokenizer.from_pretrained(self.plm_engine, token=HF_TOKEN)
+      
+    # Set padding token as EOS token
+    self._target_tokenizer.pad_token = self._target_tokenizer.eos_token
 
     inputs = self._target_tokenizer (prompt, return_tensors="pt")
     input_len = len(prompt)
 
-    outputs = self._target_model.generate(input_ids=inputs["input_ids"].to(self._device), max_new_tokens=self.max_tokens, temperature= self.temperature, do_sample= True)
+    outputs = self._target_model.generate(input_ids=inputs["input_ids"].to(self._device), max_new_tokens=self.max_tokens)
     result= self._target_tokenizer.batch_decode(outputs.detach().cpu().numpy(), skip_special_tokens=True)[0]
+
     return result[input_len-1:]
 
 
