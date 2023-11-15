@@ -41,12 +41,16 @@ PROMPT_TEMPLATES = {
             "basic": ("Context: {0}\nClaim: {1}\nclaim is {2}\nWhy? {3}\n"),
             "natural": ("Context: {0}\nClaim: {1}\nclaim is {2}\nExplain the veracity of the claim by considering just the related context. {3}\n"),
             "claude_suggestion": ("Context: {0}\nClaim: {1}\nThe claim veracity: {2}.\nUsing only the context provided, explain why the claim veracity is {2}.\n{3}"),
+            "instruction_based": ("""### Instruction:\nUse the Task below and the Input given to write the Response, which is an explanation generation that can solve the Task.
+            \n\n### Task:\nUsing only the context provided, explain why the claim veracity is {2}.\n\n### Input:\nContext: {0}\nClaim: {1}\nThe claim veracity: {2}\n\n### Response:\n{3}"""),            
             "bias_checking": ("{0}Claim: {1}\nclaim is {2}\nExplain the veracity of the claim. {3}\n")
         },
         "joint":{
             "basic": ("Context: {0}\nClaim: {1}\n Which of true, false, mixture, and unproven can be the label of the claim by considering the context? {2}\nWhy? {3}\n"),
             "natural": ("Context: {0}\nClaim: {1}\n Predict the veracity of the claim and explain your reasoning by considering just the related context. Assign one of true, false, mixture, or unproven as the veracity label of the claim.\n {2} \n{3}"),
-            "claude_suggestion": ("Context: {0}\nClaim: {1}\nBased only on the context, categorize the claim as:\n- True (supported by context)\n- False (contradicted by context)\n- Mixture (partially supported/contradicted)\n- Unproven (not enough info)\nAnd explain your reasoning.\nPredicted veracity:{2}\nExplanation:{3}"),
+            "claude_suggestion": ("Context: {0}\nClaim: {1}\nBased only on the context, categorize the claim as:\n- True (supported by context)\n- False (contradicted by context)\n- Mixture (partially supported/contradicted)\n- Unproven (not enough info)\nAnd explain your reasoning. Provide the response in JSON format with the following keys: veracity, explanation.\n{2}{3}"),
+            "instruction_based": ("""### Instruction:\nUse the Task below and the Input given to write the Response, which is a veracity label prediction and the reason explanation for your prediction that can solve the Task.
+            \n\n### Task:\nBased only on the context, categorize the claim as:\n- True (supported by context)\n- False (contradicted by context)\n- Mixture (partially supported/contradicted)\n- Unproven (not enough info)\nAnd explain your reasoning. Provide the response in JSON format with the following keys: veracity, explanation.\n\n### Input:\nContext: {0}\nClaim: {1}\n\n### Response:\n{2}{3}"""),
             "bias_checking": ("{0}Claim: {1}\n Predict the veracity of the claim and explain your reasoning. Assign one of true, false, mixture, or unproven as the veracity label of the claim.\n {2} \n{3}"),
         }
 

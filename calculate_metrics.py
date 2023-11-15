@@ -97,11 +97,11 @@ def report_veracity_metrics(file_path, pred_col_title, target_col_title, veracit
     pred_list = list(map(_clean_generated_labels, pred_list))
     labels=['true', 'false', 'mixture', 'unproven']
 
-    metrics_result= {"acc": accuracy_score(pred_list, target_list)
-        , "pre": precision_score(pred_list, target_list, average=veracity_average_method, labels=labels)
-        , "rec": recall_score(pred_list, target_list, average=veracity_average_method, labels=labels)
-        , "f1": f1_score(pred_list, target_list, average=veracity_average_method, labels=labels)
-        , "confmat": confusion_matrix(pred_list, target_list, labels=labels)}
+    metrics_result= {"acc": accuracy_score(y_pred=pred_list, y_true=target_list)
+        , "pre": precision_score(y_pred=pred_list, y_true=target_list, average=veracity_average_method, labels=labels)
+        , "rec": recall_score(y_pred=pred_list, y_true=target_list, average=veracity_average_method, labels=labels)
+        , "f1": f1_score(y_pred=pred_list, y_true=target_list, average=veracity_average_method, labels=labels)
+        , "confmat": confusion_matrix(y_pred=pred_list, y_true=target_list, labels=labels)}
 
     return metrics_result
 

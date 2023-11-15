@@ -288,14 +288,15 @@ class NLEGeneration():
     for index, target_instance in enumerate(target_instances):
       claim_id= target_instance["claim_id"]
       instance_result= experiments.select_instance_result(experiment_id, claim_id)
+      # create appropriate prompt
+      self.plms[self.selected_plm]["zero_prompt_func"](target_instance)
+
       if instance_result:
         log(f"The claim with Id {claim_id} was ignored because its result exists.")
         target_instance[self.selected_plm]= instance_result.result
         continue
 
       log(f"Generating explanation for {index+1}/{total_instances} ...")
-      # create appropriate prompt
-      self.plms[self.selected_plm]["zero_prompt_func"](target_instance)
       target_instance[self.selected_plm]= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
       
       # save each instance result into the DB
@@ -327,14 +328,15 @@ class NLEGeneration():
     for index, target_instance in enumerate(test_instances):
       claim_id= target_instance["claim_id"]
       instance_result= experiments.select_instance_result(experiment_id, claim_id)
+      # create appropriate prompt
+      self.plms[self.selected_plm]["few_prompt_func"](demonstration_instances, target_instance)
+      
       if instance_result:
         log(f"The claim with Id {claim_id} was ignored because its result exists.")
         target_instance[self.selected_plm]= instance_result.result
         continue
 
-      log(f"Generating explanation for {index+1}/{total_instances} ...")      
-      # create appropriate prompt
-      self.plms[self.selected_plm]["few_prompt_func"](demonstration_instances, target_instance)
+      log(f"Generating explanation for {index+1}/{total_instances} ...")
       target_instance[self.selected_plm]= self.plms[self.selected_plm]["api_func"](target_instance['prompt'])
 
       # save each instance result into the DB

@@ -15,6 +15,39 @@ logger.addHandler(file_handler)
 # End of logging
 
 
+def seperate_veracity_from_explanation(input_text):
+    '''
+    This function extracts and returns the veracity label and explanation from input text for joint task
+
+    :param input_text: The input text
+    :type input_text: str
+
+    :returns: Extracted veracity label and explanation
+    :rtype: tuple
+    '''
+
+    input_text= " ".join([line for line in input_text.split("\n") if len(line.strip())>1])
+    if input_text.strip() == "":
+      return "other", ""
+
+    # remove the curly braces from the string
+    input_text = input_text.strip('{}').replace("Veracity", "veracity", 1).replace("Explanation", "explanation", 1).replace("explanation", "###EOVS###", 1)
+
+    responses = input_text.split("###EOVS###")
+    veracity= responses[0].split(":")
+    if len(veracity)==1:
+      veracity= veracity[0]
+    elif len(veracity)==2:
+      veracity= veracity[1]
+    else:
+      veracity = veracity[1] if "veracity" in veracity[0] else veracity[2]
+      veracity = veracity.split("explanation")[0]
+    veracity = veracity.split()[0].replace(",","").replace("'","").replace("\"","")
+
+    explanation= responses[1].strip("\"\"").strip("\": \"").strip("''").strip("': '")
+    return veracity.lower(), explanation.split("###")[0]
+
+
 def main():
     # Initialize parser
     parser = argparse.ArgumentParser()
@@ -158,6 +191,13 @@ def main():
 
     if args.add_chatgpt_prompt:
         add_chatgpt_prompt(nle_result, args.prompt_type)
+
+    # Seperate veracity from explanation in joint task
+    if "joint" in args.prompt_template:
+        for target_instance in nle_result:
+            veracity, explanation = seperate_veracity_from_explanation(target_instance[args.plm])
+            target_instance[args.plm+"_veracity"]= veracity
+            target_instance[args.plm+"_explanation"]= explanation
 
     # save results in a csv file
     Path(save_path).mkdir(parents=True, exist_ok=True)
