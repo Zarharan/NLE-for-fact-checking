@@ -77,6 +77,7 @@ NLI_LABEL_ID= {
     "contradiction": 2
 }
 
+OPEN_SOURCED_MODELS= ["falcon", "llama", "mistral", "vicuna"]
 
 # take Hugging face and Open AI APIs' secret keys from .env file.
 secret_keys = dotenv_values(".env")

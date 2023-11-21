@@ -3,7 +3,7 @@ import json
 from openai.error import RateLimitError
 import backoff
 from data.pubhealth.models import *
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, LlamaTokenizer
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
 
 class NLEGeneration():
@@ -72,10 +72,21 @@ class NLEGeneration():
     :returns: The input instance with prompts added to it
     :rtype: dict
     '''
+
+    label= target_instance['label']
+    explanation= target_instance['explanation']
+    if type=="zero" and any(item in self.prompt_key for item in ["veracity", "joint"]):
+      label= ""
+    
+    if type=="zero" or "veracity" in self.prompt_key:
+      explanation= ""
+
+    if type=="few" and "joint" in self.prompt_key:
+      label= "{\"veracity\":\"" + target_instance['label'] + "\","
+      explanation= "\"explanation\":\"" + target_instance['explanation'] + "\"}"
+
     target_instance['prompt'] = self.prompt_template.format("" if "bias_checking" in self.prompt_key else target_instance['summarized_main_text']
-      , target_instance['claim']
-      , "" if type=="zero" and any(item in self.prompt_key for item in ["veracity", "joint"]) else target_instance['label']
-      , "" if type=="zero" or "veracity" in self.prompt_key else target_instance['explanation'])
+      , target_instance['claim'], label, explanation)
             
     return target_instance
 
@@ -146,7 +157,7 @@ class NLEGeneration():
         elif "explanation" in self.prompt_key:
           reply= item['explanation']
         else:
-          reply= item['label'] + "\n" + item['explanation']          
+          reply= "{\"veracity\":\"" + target_instance['label'] + "\"," + "\"explanation\":\"" + target_instance['explanation'] + "\"}"
         demonstration_lst.append({"role": "assistant", "content": reply})
       
       # Create propmt for test instances. Add the demonstration section at the begining of each instances.

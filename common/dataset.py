@@ -39,7 +39,7 @@ class PubHealthDataset():
     self.df_orginal_valset= None
 
     if val_path is not None and len(val_path)>0:
-      self.df_orginal_valset = self.read_dataset(val_path, 'validation')
+      self.df_orginal_valset = self.read_dataset(val_path, 'val')
     
     if test_path is not None and len(test_path)>0:
       self.df_orginal_testset = self.read_dataset(test_path, 'test')

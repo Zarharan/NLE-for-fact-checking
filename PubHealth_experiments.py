@@ -15,6 +15,22 @@ logger.addHandler(file_handler)
 # End of logging
 
 
+def clean_explanation(explanation):
+    '''
+    This function clean explanation and remove all extra text after ###
+
+    :param explanation: The input explanation
+    :type explanation: str
+
+    :returns: cleaned explanation
+    :rtype: str
+    '''
+
+    explanation= " ".join([line for line in explanation.split("\n") if len(line.strip())>1])
+    explanation= explanation.strip("\"\"").strip("\": \"").strip("''").strip("': '")
+    return explanation.split("###")[0]
+
+
 def seperate_veracity_from_explanation(input_text):
     '''
     This function extracts and returns the veracity label and explanation from input text for joint task
@@ -44,8 +60,7 @@ def seperate_veracity_from_explanation(input_text):
       veracity = veracity.split("explanation")[0]
     veracity = veracity.split()[0].replace(",","").replace("'","").replace("\"","")
 
-    explanation= responses[1].strip("\"\"").strip("\": \"").strip("''").strip("': '")
-    return veracity.lower(), explanation.split("###")[0]
+    return veracity.lower(), clean_explanation(responses[1])
 
 
 def main():
@@ -92,7 +107,7 @@ def main():
     parser.add_argument("-plm", "--plm", help = "gpt3, chat_gpt(gpt-3.5-turbo), gpt4, vicuna, mistral, or gptj"
     , default='gpt3', choices=['gpt3','chat_gpt', 'gpt4','gptj', 'vicuna', 'mistral', 'falcon', 'llama'])
     parser.add_argument("-plm_engine", "--plm_engine", help = "For chat completion: gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301. And for completion: text-davinci-003, text-davinci-002, text-curie-001, text-babbage-001, text-ada-001"
-    , default='', choices=['','gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314', 'gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'text-davinci-003', 'text-davinci-002', 'text-curie-001', 'text-babbage-001', 'text-ada-001', 'mistralai/Mistral-7B-v0.1', 'lmsys/vicuna-13b-v1.5', 'mistralai/Mistral-7B-Instruct-v0.1', 'lmsys/vicuna-33b-v1.3', 'tiiuae/falcon-40b', 'meta-llama/Llama-2-13b-hf'])
+    , default='', choices=['','gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314', 'gpt-3.5-turbo', 'gpt-3.5-turbo-16k', 'gpt-3.5-turbo-0301', 'text-davinci-003', 'text-davinci-002', 'text-curie-001', 'text-babbage-001', 'text-ada-001', 'mistralai/Mistral-7B-v0.1', 'lmsys/vicuna-13b-v1.5', 'mistralai/Mistral-7B-Instruct-v0.1', 'lmsys/vicuna-33b-v1.3', 'tiiuae/falcon-40b', 'meta-llama/Llama-2-13b-hf'])
     parser.add_argument("-nle_temperature", "--nle_temperature", help = "To set the randomness of generated explanation."
     , default=0.5, type= float)
     parser.add_argument("-add_chatgpt_prompt", "--add_chatgpt_prompt", help = "Add another coloumn to the result file for ChatGPT prompt."
@@ -198,6 +213,12 @@ def main():
             veracity, explanation = seperate_veracity_from_explanation(target_instance[args.plm])
             target_instance[args.plm+"_veracity"]= veracity
             target_instance[args.plm+"_explanation"]= explanation
+
+    elif "explanation" in args.prompt_template and args.plm in OPEN_SOURCED_MODELS:
+        for target_instance in nle_result:
+            cleaned_explanation = clean_explanation(target_instance[args.plm])
+            target_instance[args.plm+"_cleaned"]= cleaned_explanation
+        
 
     # save results in a csv file
     Path(save_path).mkdir(parents=True, exist_ok=True)

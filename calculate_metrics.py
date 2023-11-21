@@ -28,7 +28,7 @@ def get_pred_target_colms(file_path, *args):
     path = Path(file_path)
     assert path.is_file(), f"Please enter a correct path to a csv file."
     target_file_df= pd.read_csv(file_path)
-    target_file_df= target_file_df.dropna()
+    target_file_df= target_file_df.fillna('')
     lst_result=[]
     
     for arg in args:
