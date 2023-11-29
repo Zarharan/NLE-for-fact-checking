@@ -157,7 +157,7 @@ class NLEGeneration():
         elif "explanation" in self.prompt_key:
           reply= item['explanation']
         else:
-          reply= "{\"veracity\":\"" + target_instance['label'] + "\"," + "\"explanation\":\"" + target_instance['explanation'] + "\"}"
+          reply= "{\"veracity\":\"" + item['label'] + "\"," + "\"explanation\":\"" + item['explanation'] + "\"}"
         demonstration_lst.append({"role": "assistant", "content": reply})
       
       # Create propmt for test instances. Add the demonstration section at the begining of each instances.
