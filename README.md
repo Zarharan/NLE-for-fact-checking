@@ -1,4 +1,7 @@
 # NLE-for-fact-checking
+
+**This repository will be updated soon.**
+
 In this repository, we explored Natural Language Explanation (NLE) for fact-checking. We used [PubHealth](https://github.com/neemakot/Health-Fact-Checking) dataset and you can find the dataset and our saveed prompts templates in the [data](https://github.com/Zarharan/NLE-for-fact-checking/tree/main/data) directory. We utilized prompt-based paradigm to generate explanation by using GPT-3 and ChatGPT for both zero-shot and few-shot learning.
 
 ## Reproducing the Experiments
