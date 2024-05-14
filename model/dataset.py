@@ -70,6 +70,8 @@ class PubHealthDataset(Dataset):
         else:
             raise Exception("Implement an appropriate reading method!")
 
+        self.original_df= self.original_df.filter(items=['claim', 'claim_id', 'main_text', 'label', 'explanation'])
+
         # Remove instances that include null values
         self.original_df = self.original_df.dropna()
 
