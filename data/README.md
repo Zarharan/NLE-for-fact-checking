@@ -11,3 +11,8 @@ When we examine the average number of tokens in the dev set and test set of the 
 ![The average number of tokens in the dev set](https://github.com/Zarharan/NLE-for-fact-checking/blob/main/data/pubhealth/dev_avg_no_tokens.png)
 
 ![The average number of tokens in the test set](https://github.com/Zarharan/NLE-for-fact-checking/blob/main/data/pubhealth/test_avg_no_tokens.png)
+
+
+## Context Summarization
+
+Building on the preceding section, we employed ChatGPT (gpt-3.5-turbo) to summarize all contexts exceeding 350 tokens. For more information, read the section 4.3 in the paper.

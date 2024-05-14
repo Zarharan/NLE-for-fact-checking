@@ -15,3 +15,7 @@ python3 PubHealth_experiments.py -test_path data/pubhealth/test.tsv -summarize c
 ```
 
 You can find the description of each argument in [PubHealth_experiments.py file](https://github.com/Zarharan/NLE-for-fact-checking/blob/main/PubHealth_experiments.py)
+
+## Human Evaluation Tool
+
+You can locate the human evaluation tool for assessing explanations based on the proposed criteria in the paper within [this repository](https://github.com/Zarharan/human-evaluation-tool-for-NLE).
