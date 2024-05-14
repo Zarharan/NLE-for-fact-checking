@@ -12,7 +12,6 @@ In order to reproduce the results of our experiments, you can run ``python PubHe
 
 ```
 python3 PubHealth_experiments.py -test_path data/pubhealth/test.tsv -summarize chatgpt -summarization_max_token 350 -prompt_template veracity/claude_suggestion -explanation_max_token 3 -test_target_set test -k_per_class 0 -prompt_type zero -plm gpt4 -plm_engine gpt-4 -nle_temperature 1.0 -k_rand_instance 1233
-
 ```
 
 You can find the description of each argument in [PubHealth_experiments.py file](https://github.com/Zarharan/NLE-for-fact-checking/blob/main/PubHealth_experiments.py)
